@@ -152,5 +152,5 @@ cython_debug/
 #.idea/
 
 # Project-specific files
-run.sh
+run*.sh
 test_responses
