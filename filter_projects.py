@@ -7,6 +7,7 @@
 
 import os
 import pandas as pd
+import numpy as np
 from data_io import write_df_csv
 from ghtorrent import (
     GHTORRENT_PATH,
@@ -17,9 +18,11 @@ from ghtorrent import (
 from github_api_client import get_workflows_for_repos
 
 NUM_PARTITIONS = 10
-
+NUM_GRAPHQL_PARTITIONS = 1000
 
 def filter_by_member_count(output_projects_path: str):
+    print("[!] Filtering out projects with < 5 members")
+
     # Load project_members table
     print('Loading project-member associations...')
     project_members_df = pd.read_csv(
@@ -87,20 +90,32 @@ def filter_by_member_count(output_projects_path: str):
 
 
 def filter_by_workflows(input_projects_path: str, output_projects_path: str):
+    print("[!] Filtering out projects that do not use GitHub Actions")
+
+    print("Loading projects...")
     projects_df = pd.read_csv(
         input_projects_path,
         index_col=False,
         names=PROJECT_COLS
     )
+    print(f"Loaded {projects_df.shape[0]} projects")
     repos = [
         {
             'id': f"repo{r['repo_id']}",
-            'owner': r['owner_id'],
-            'name': r['name']
+            'owner': r['url'].split('/')[-2],
+            'name': r['url'].split('/')[-1]
         }
         for r in projects_df.to_dict(orient="records")
     ]
-    get_workflows_for_repos(repos, 'test_responses/repos_workflows.json')
+    repos_partitions = np.array_split(repos, NUM_GRAPHQL_PARTITIONS)
+
+    start = 0
+    for i in range(start, len(repos_partitions)):
+        repos_partition = repos_partitions[i]
+        actions_output_path = f"data/actions_projects_gte5_members_split{i}.json"
+        print(f"Querying GitHub Actions usage for projects (partition {i+1}/{NUM_GRAPHQL_PARTITIONS})...")
+        get_workflows_for_repos(repos_partition.tolist(), actions_output_path)
+    
     # TODO: Parse response to determine which have at least 1 workflow
 
 
