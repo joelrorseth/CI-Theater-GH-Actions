@@ -10,6 +10,6 @@ def write_res_json(res_json: Any, output_filename: OutputFile = None) -> None:
             json.dump(res_json, f)
 
 
-def write_df_csv(df, output_filename: OutputFile = None):
+def write_df_csv(df, output_filename: OutputFile = None, header: bool = False, index: bool = False):
     if output_filename is not None:
-        df.to_csv(output_filename)
+        df.to_csv(output_filename, header=header, index=index)
