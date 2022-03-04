@@ -6,6 +6,7 @@
 #
 
 import os
+import json
 import pandas as pd
 from data_io import write_df_csv
 from ghtorrent import (
@@ -104,12 +105,39 @@ def filter_by_workflows(input_projects_path: str, output_projects_path: str):
     # TODO: Parse response to determine which have at least 1 workflow
 
 
+def get_projects_with_workflows():
+    eligible_project_ids = set()
+
+    def extract_eligible_projects(query):
+        if 'data' in query and query['data'] is not None:
+            for repo_id_key, data_val in query['data'].items():
+                if data_val is not None:
+                    repo_val = query['data'][repo_id_key]
+                    if 'object' in repo_val and repo_val['object'] is not None:
+                        repo_obj = repo_val['object']
+                        if 'entries' in repo_obj and repo_obj['entries'] is not None:
+                            repo_entires = repo_obj['entries']
+                            if len(repo_entires) > 0:
+                                eligible_project_ids.add(
+                                    repo_id_key.replace('repo', '')
+                                )
+
+    query_responses = ['test_responses/actions_query.json']
+    for query_response in query_responses:
+        with open(query_response) as json_file:
+            query = json.load(json_file)
+            extract_eligible_projects(query)
+
+    print(
+        f"There are {len(eligible_project_ids)} projects using GitHub Actions")
+
+
 if __name__ == "__main__":
     projects_gte5_members_path = 'data/projects_gte5_members.csv'
     actions_projects_gte5_members_path = 'data/actions_projects_gte5_members.csv'
 
     # Execute filtering stages (must be done in order, due to partitioning in first pass)
     # filter_by_member_count(projects_gte5_members_path)
-    filter_by_workflows(projects_gte5_members_path,
-                        actions_projects_gte5_members_path)
-    pass
+    # filter_by_workflows(projects_gte5_members_path,
+    #                    actions_projects_gte5_members_path)
+    #get_projects_with_workflows()
