@@ -117,10 +117,16 @@ def filter_by_workflows(input_projects_path: str, output_projects_path: str):
         print(f"Querying GitHub Actions usage for projects (partition {i+1}/{NUM_GRAPHQL_PARTITIONS})...")
         get_workflows_for_repos(repos_partition.tolist(), actions_output_path)
     
-    # TODO: Parse response to determine which have at least 1 workflow
+
+    # Parse response to determine which have at least 1 workflow
+    query_responses = [f"data/actions_projects_gte5_members_split{i}.json" for i in range(NUM_GRAPHQL_PARTITIONS)]
+    eligible_project_ids = get_projects_with_workflows(query_responses)
+    print(f"There are {len(eligible_project_ids)} projects using GitHub Actions")
+
+    # TODO: Write projects to output file
 
 
-def get_projects_with_workflows():
+def get_projects_with_workflows(query_responses):
     eligible_project_ids = set()
 
     def extract_eligible_projects(query):
@@ -137,14 +143,12 @@ def get_projects_with_workflows():
                                     repo_id_key.replace('repo', '')
                                 )
 
-    query_responses = ['test_responses/actions_query.json']
     for query_response in query_responses:
         with open(query_response) as json_file:
             query = json.load(json_file)
             extract_eligible_projects(query)
 
-    print(
-        f"There are {len(eligible_project_ids)} projects using GitHub Actions")
+    return eligible_project_ids
 
 
 if __name__ == "__main__":
@@ -152,7 +156,6 @@ if __name__ == "__main__":
     actions_projects_gte5_members_path = 'data/actions_projects_gte5_members.csv'
 
     # Execute filtering stages (must be done in order, due to partitioning in first pass)
-    # filter_by_member_count(projects_gte5_members_path)
-    # filter_by_workflows(projects_gte5_members_path,
-    #                    actions_projects_gte5_members_path)
-    #get_projects_with_workflows()
+    filter_by_member_count(projects_gte5_members_path)
+    filter_by_workflows(projects_gte5_members_path, actions_projects_gte5_members_path)
+
