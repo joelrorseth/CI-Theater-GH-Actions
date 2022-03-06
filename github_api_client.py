@@ -48,7 +48,7 @@ def get_workflow_runs(owner: str, repo: str, workflow_id_or_filename: str,
     )
 
 
-def build_graphql_query_repo_workflows(id: str, owner: str, name: str) -> str:
+def build_graphql_query_workflow_filenames(id: str, owner: str, name: str) -> str:
     return f"""
     {id}: repository(owner: "{owner}", name: "{name}") {{
         object(expression: "HEAD:.github/workflows") {{
@@ -62,10 +62,30 @@ def build_graphql_query_repo_workflows(id: str, owner: str, name: str) -> str:
     """
 
 
+def build_graphql_query_workflow_file(id: str, owner: str, name: str, filename: str) -> str:
+    return f"""
+    {id}: repository(owner: "{owner}", name: "{name}") {{
+        object(expression: "HEAD:.github/workflows/{filename}") {{
+            ... on Blob {{
+                text
+            }}
+        }}
+    }}
+    """
+
+
 def get_workflows_for_repos(repos: List[Dict[str, str]],
                             output_filename: OutputFile = None) -> Any:
-    queries = [build_graphql_query_repo_workflows(
+    queries = [build_graphql_query_workflow_filenames(
         r['id'], r['owner'], r['name']) for r in repos]
     query = ' '.join(queries)
     query = f"{{ {query} }}"
+    run_graphql_query(query, output_filename)
+
+
+def get_workflow_files_for_repos(repos: List[Dict[str, str]],
+                                 output_filename: OutputFile = None) -> Any:
+    queries = [build_graphql_query_workflow_file(
+        r['id'], r['owner'], r['name'], r['filename']) for r in repos]
+    query = f"{{ {' '.join(queries)} }}"
     run_graphql_query(query, output_filename)
