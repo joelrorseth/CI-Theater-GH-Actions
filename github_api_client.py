@@ -49,6 +49,8 @@ def get_workflow_runs(owner: str, repo: str, workflow_id_or_filename: str,
 
 
 def build_graphql_query_workflow_filenames(id: str, owner: str, name: str) -> str:
+    """Build a GitHub API GraphQL query to get the filenames of all workflows defined in a given
+    project (repository). Workflows are presumed to exist at `HEAD:.github/workflows/`."""
     return f"""
     {id}: repository(owner: "{owner}", name: "{name}") {{
         object(expression: "HEAD:.github/workflows") {{
@@ -63,6 +65,8 @@ def build_graphql_query_workflow_filenames(id: str, owner: str, name: str) -> st
 
 
 def build_graphql_query_workflow_file(id: str, owner: str, name: str, filename: str) -> str:
+    """Build a GitHub API GraphQL query to get the contents of a given project (repository) YAML
+    workflow file. The file is presumed to exist at `HEAD:.github/workflows/{filename}`."""
     return f"""
     {id}: repository(owner: "{owner}", name: "{name}") {{
         object(expression: "HEAD:.github/workflows/{filename}") {{
@@ -72,6 +76,37 @@ def build_graphql_query_workflow_file(id: str, owner: str, name: str, filename: 
         }}
     }}
     """
+
+
+def parse_graphql_query_workflow_filenames(res: str):
+    """
+    Parse the response to a GitHub API GraphQL query getting workflow filnames for a set of
+    projects. A dictionary is returned, mapping each repo key (eg. `repo123`) to a non-empty list
+    of its workflow filenames. Projects without any workflow files, or those which triggered
+    errors, will be omitted from the returned dictionary. Example return value:
+    ```
+    {
+        '123': [
+            { "name": "build.yml" },
+            { "name": "release.yml" }
+        ]
+    }
+    """
+    project_workflows_map = {}
+
+    if 'data' in res and res['data'] is not None:
+        for repo_id_key, data_val in res['data'].items():
+            if data_val is not None:
+                repo_val = res['data'][repo_id_key]
+                if 'object' in repo_val and repo_val['object'] is not None:
+                    repo_obj = repo_val['object']
+                    if 'entries' in repo_obj and repo_obj['entries'] is not None:
+                        repo_entires = repo_obj['entries']
+                        if len(repo_entires) > 0:
+                            repo_id = repo_id_key.replace('repo', '')
+                            project_workflows_map[repo_id] = repo_entires
+
+    return project_workflows_map
 
 
 def get_workflows_for_repos(repos: List[Dict[str, str]],

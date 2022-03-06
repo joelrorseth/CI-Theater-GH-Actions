@@ -7,6 +7,7 @@
 
 import os
 import json
+from typing import List
 import pandas as pd
 import numpy as np
 from data_io import write_df_csv
@@ -16,10 +17,11 @@ from ghtorrent import (
     PROJECT_MEMBERS_COLS,
     PROJECT_MEMBERS_PATH
 )
-from github_api_client import get_workflows_for_repos
+from github_api_client import get_workflows_for_repos, parse_graphql_query_workflow_filenames
 
 NUM_PARTITIONS = 10
 NUM_GRAPHQL_PARTITIONS = 1000
+
 
 def filter_by_member_count(output_projects_path: str):
     print("[!] Filtering out projects with < 5 members")
@@ -93,6 +95,7 @@ def filter_by_member_count(output_projects_path: str):
 def filter_by_workflows(input_projects_path: str, output_projects_path: str):
     print("[!] Filtering out projects that do not use GitHub Actions")
 
+    # Load the curretn set of projects to be filtered
     print("Loading projects...")
     projects_df = pd.read_csv(
         input_projects_path,
@@ -108,47 +111,55 @@ def filter_by_workflows(input_projects_path: str, output_projects_path: str):
         }
         for r in projects_df.to_dict(orient="records")
     ]
-    repos_partitions = np.array_split(repos, NUM_GRAPHQL_PARTITIONS)
 
-    start = 0
-    for i in range(start, len(repos_partitions)):
+    # Partition the projects, then query for workflows contained in the projects of each partition
+    repos_partitions = np.array_split(repos, NUM_GRAPHQL_PARTITIONS) 
+    for i in range(0, len(repos_partitions)):
         repos_partition = repos_partitions[i]
         actions_output_path = f"data/actions_projects_gte5_members_split{i}.json"
-        print(f"Querying GitHub Actions usage for projects (partition {i+1}/{NUM_GRAPHQL_PARTITIONS})...")
+        print(
+            f"Querying GitHub Actions usage for projects (partition {i+1}/{NUM_GRAPHQL_PARTITIONS})...")
         get_workflows_for_repos(repos_partition.tolist(), actions_output_path)
-    
 
     # Parse response to determine which have at least 1 workflow
-    query_responses = [f"data/actions_projects_gte5_members_split{i}.json" for i in range(NUM_GRAPHQL_PARTITIONS)]
-    eligible_project_ids = get_projects_with_workflows(query_responses)
-    print(f"There are {len(eligible_project_ids)} projects using GitHub Actions")
+    query_responses = [
+        f"data/actions_projects_gte5_members_split{i}.json" for i in range(NUM_GRAPHQL_PARTITIONS)]
+    project_workflows_map = extract_workflow_filenames_from_projects(query_responses)
+    print(f"There are {len(project_workflows_map.keys())} projects using GitHub Actions")
 
     # TODO: Write projects to output file
 
 
-def get_projects_with_workflows(query_responses):
-    eligible_project_ids = set()
+def extract_workflow_filenames_from_projects(query_response_filenames: List[str]):
+    """
+    Given a list of filenames, each whose file is a response to a (partitioned) query to get repo
+    workflow filenames, parse and return the filenames ONLY for repos that had any. A dictionary
+    is returned, mapping each repo_id to a non-empty list of its workflow filenames, eg:
+    ```
+    {
+        '123': [
+            { "name": "build.yml" },
+            { "name": "release.yml" }
+        ]
+    }
+    ```
+    """
+    all_project_workflows_map = {}
 
-    def extract_eligible_projects(query):
-        if 'data' in query and query['data'] is not None:
-            for repo_id_key, data_val in query['data'].items():
-                if data_val is not None:
-                    repo_val = query['data'][repo_id_key]
-                    if 'object' in repo_val and repo_val['object'] is not None:
-                        repo_obj = repo_val['object']
-                        if 'entries' in repo_obj and repo_obj['entries'] is not None:
-                            repo_entires = repo_obj['entries']
-                            if len(repo_entires) > 0:
-                                eligible_project_ids.add(
-                                    repo_id_key.replace('repo', '')
-                                )
-
-    for query_response in query_responses:
-        with open(query_response) as json_file:
+    for filename in query_response_filenames:
+        with open(filename) as json_file:
             query = json.load(json_file)
-            extract_eligible_projects(query)
+            project_workflows_map = parse_graphql_query_workflow_filenames(
+                query)
 
-    return eligible_project_ids
+            # Merge the workflows from this response with all others
+            for repo_id, filenames in project_workflows_map.items():
+                if repo_id in all_project_workflows_map:
+                    print(
+                        f"WARNING: Workflow files from repo with ID {repo_id} have already been parsed, will replace.")
+                all_project_workflows_map[repo_id] = filenames
+
+    return all_project_workflows_map
 
 
 if __name__ == "__main__":
@@ -157,5 +168,5 @@ if __name__ == "__main__":
 
     # Execute filtering stages (must be done in order, due to partitioning in first pass)
     filter_by_member_count(projects_gte5_members_path)
-    filter_by_workflows(projects_gte5_members_path, actions_projects_gte5_members_path)
-
+    filter_by_workflows(projects_gte5_members_path,
+                        actions_projects_gte5_members_path)
