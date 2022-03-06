@@ -10,7 +10,7 @@ import json
 from typing import List
 import pandas as pd
 import numpy as np
-from data_io import write_df_csv, write_res_json
+from data_io import write_df_to_csv_file, write_dict_to_json_file
 from ghtorrent import (
     GHTORRENT_PATH,
     PROJECT_COLS,
@@ -83,7 +83,7 @@ def filter_by_member_count(output_projects_path: str):
             f"Removed projects with < 5 members, there are now {projects_df.shape[0]} projects")
 
         filtered_projects_path = f"data/projects_gte5_members_split{i}.csv"
-        write_df_csv(projects_df, filtered_projects_path)
+        write_df_to_csv_file(projects_df, filtered_projects_path)
         print(f"Wrote to {filtered_projects_path}")
 
     print(f"Done filtering projects into {NUM_PARTITIONS} partitions")
@@ -133,7 +133,7 @@ def filter_by_workflows(input_projects_path: str, output_projects_path: str):
         f"There are {len(project_workflows_dict.keys())} projects using GitHub Actions")
 
     # Write projects to output file
-    write_res_json(project_workflows_dict, output_projects_path)
+    write_dict_to_json_file(project_workflows_dict, output_projects_path)
     print(f"[!] Wrote filtered projects file to {output_projects_path}")
     print("[!] Done filtering out projects that do not use GitHub Actions")
 
