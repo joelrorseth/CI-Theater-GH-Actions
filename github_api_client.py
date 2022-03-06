@@ -140,7 +140,7 @@ def parse_graphql_query_workflow_filenames(res: str):
     return project_workflows_dict
 
 
-def parse_graphql_query_workflow_file(res: str, old_project_workflows_dict: Dict[str. Dict[str, str]]) -> Dict[str, List]:
+def parse_graphql_query_workflow_file(res: str, old_project_workflows_dict: Dict[str, Dict[str, str]]) -> Dict[str, List]:
     """
     Parse the response to a GitHub API GraphQL query getting workflow filnames for a set of
     projects. A dictionary is returned, mapping each repo key (eg. `repo123`) to a non-empty list
@@ -282,7 +282,7 @@ def get_workflow_files(workflow_queries: List[Dict[str, str]], output_filename: 
 
 
 def get_workflow_files_partitioned(projects_df: pd.DataFrame,
-                                   project_workflows_dict: Dict[str. Dict[str, str]],
+                                   project_workflows_dict: Dict[str, Dict[str, str]],
                                    num_partitions: int,
                                    partition_output_prefix: str,
                                    output_filename: OutputFile = None) -> None:

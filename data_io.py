@@ -12,7 +12,7 @@ def write_dict_to_json_file(res_json: Any, output_filename: OutputFile = None) -
             json.dump(res_json, f)
 
 
-def read_dict_from_json_file(json_file_path: str) -> Dict[Any]:
+def read_dict_from_json_file(json_file_path: str) -> Dict:
     with open(json_file_path) as infile:
         return json.load(infile)
 

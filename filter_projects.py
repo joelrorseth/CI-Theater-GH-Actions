@@ -115,6 +115,7 @@ def filter_by_workflow_files(input_projects_path: str, output_projects_path: str
         names=PROJECT_COLS
     )
     print(f"Loaded {projects_df.shape[0]} projects")
+
     repos = [
         {
             'id': f"repo{r['repo_id']}",
@@ -140,7 +141,7 @@ def filter_by_workflow_files(input_projects_path: str, output_projects_path: str
         query_responses)
 
     # Extract repo_ids for projects that contained at least 1 workflow
-    remaining_repo_ids = project_workflows_dict.keys()
+    remaining_repo_ids = [int(repo_id) for repo_id in project_workflows_dict.keys()]
     projects_df = projects_df[projects_df.repo_id.isin(remaining_repo_ids)]
     print(
         f"There are {len(remaining_repo_ids)} projects containing GitHub Actions workflow(s)")
@@ -152,7 +153,7 @@ def filter_by_workflow_files(input_projects_path: str, output_projects_path: str
     print(f"[!] Wrote filtered projects file to {output_projects_path}")
     print(f"[!] Wrote workflow filenames file to {output_workflows_path}")
     print("[!] Done filtering out projects that don't have any GitHub Actions workflow files")
-    print(f"[!] # remaining projects: ${projects_df.shape[0]}")
+    print(f"[!] # remaining projects: {projects_df.shape[0]}")
 
 
 def filter_by_ci_workflow_files(input_projects_path: str, output_projects_path: str,
@@ -205,3 +206,4 @@ if __name__ == "__main__":
         ci_workflows_projects_gte5_members_path,
         yaml_workflows_projects_gte5_members_json_prefix
     )
+
