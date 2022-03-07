@@ -6,7 +6,7 @@ import time
 # Disable certificate validation warnings
 packages.urllib3.disable_warnings()
 
-RETRY_COUNT = 3
+RETRY_COUNT = 10
 
 OptionalAny = Union[Any, None]
 
@@ -26,9 +26,12 @@ def post_to_url(url: str, json: Dict[str, Any], auth: OptionalAny,
         try:
             res = post(url, json=json, auth=auth)
             res_json = res.json()
+            if res_json is None or not('data' in res_json) or res_json['data'] is None:
+                raise ValueError()
             write_dict_to_json_file(res_json, output_filename)
             return res_json
         except:
-            print(f"Error occurred, retrying [{counter+1}/3]...")
-            time.sleep(1)
+            print(f"Error occurred, retrying [{counter+1}/{RETRY_COUNT}]...")
+            time.sleep(3)
             counter += 1
+    print(f"ERROR: Exhausted all {RETRY_COUNT} retries")
