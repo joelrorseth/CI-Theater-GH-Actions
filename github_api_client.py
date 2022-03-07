@@ -246,7 +246,8 @@ def combine_partitioned_workflow_files(query_response_filenames: List[str], old_
 
     for filename in query_response_filenames:
         query = read_dict_from_json_file(filename)
-        project_workflows_dict = parse_graphql_query_workflow_file(query, old_project_workflows_dict)
+        project_workflows_dict = parse_graphql_query_workflow_file(
+            query, old_project_workflows_dict)
 
         # Merge the workflows from this response with all others
         for repo_id, repo_workflows in project_workflows_dict.items():
@@ -260,11 +261,11 @@ def combine_partitioned_workflow_files(query_response_filenames: List[str], old_
                 else:
                     all_project_workflows_dict[repo_id] = {}
 
-            # NOTE: Workflow filename index is used as a key (treat it like a workflow id)
-            all_project_workflows_dict[repo_id][workflow_filename_idx] = {
-                'name': workflow['name'],
-                'text': workflow['text']
-            }
+                # NOTE: Workflow filename index is used as a key (treat it like a workflow id)
+                all_project_workflows_dict[repo_id][workflow_filename_idx] = {
+                    'name': workflow['name'],
+                    'text': workflow['text']
+                }
 
     return all_project_workflows_dict
 
@@ -347,7 +348,7 @@ def get_workflow_files_partitioned(projects_df: pd.DataFrame,
 
     if output_filename is not None:
         write_dict_to_json_file(new_workflows_dict, output_filename)
-        print(f"Wrote YAML workflows for {len(new_workflows_dict.keys())} projects to {output_filename}")
+        print(
+            f"Wrote YAML workflows for {len(new_workflows_dict.keys())} projects to {output_filename}")
 
     return new_workflows_dict
-
