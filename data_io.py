@@ -1,9 +1,9 @@
 import json
 import yaml
 import pandas as pd
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
-OutputFile = Union[str, None]
+OutputFile = Optional[str]
 
 
 def write_dict_to_json_file(res_json: Any, output_filename: OutputFile = None) -> None:
@@ -21,6 +21,17 @@ def write_str_to_yaml_file(res_yaml: str, output_filename: OutputFile = None) ->
     if output_filename is not None:
         with open(output_filename, 'w') as outfile:
             yaml.dump(res_yaml, outfile)
+
+
+def read_dict_from_yaml_str(yaml_str: str) -> Optional[Dict[str, Any]]:
+    try:
+        yaml_dict = yaml.load(yaml_str, Loader=yaml.BaseLoader)
+        if type(yaml_dict) is dict:
+            return yaml_dict
+    except yaml.scanner.ScannerError as e:
+        print("ERROR: YAML parsing raised ScannerError.")
+    except yaml.parser.ParserError as e:
+        print("ERROR: YAML parsing raised ParserError.")
 
 
 def write_df_to_csv_file(df, output_filename: OutputFile = None,
