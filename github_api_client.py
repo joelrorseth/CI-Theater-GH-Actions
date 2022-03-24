@@ -1,10 +1,11 @@
 import os
 import pandas as pd
 import numpy as np
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 from requests.utils import quote
 from base_api_client import OptionalParams, get_from_url, post_to_url
 from data_io import OutputFile, read_dict_from_json_file, write_dict_to_json_file
+from projects import decode_repo_and_workflow_key, decode_repo_key, encode_repo_and_workflow_key
 
 API_USERNAME = os.environ['api_username']
 API_PASSWORD = os.environ['api_password']
@@ -12,31 +13,12 @@ GITHUB_BASE_URL = os.environ['github_base_url']
 AUTH = (API_USERNAME, API_PASSWORD)
 
 
-def encode_repo_and_workflow_key(repo_id: str, workflow_filename_idx: str) -> str:
-    """
-    Encode a key for use as an alias in a GraphQL query for a specific workflow file. These keys
-    are of the form `repo123workflow456`, which indicate that the query was for the repo with
-    GHTorrent repo_id of 123 and workflow filename at index 456 in the project's
-    project_workflows_dict entry. A single key (str) is returned.
-    """
-    return f"repo{repo_id}workflow{workflow_filename_idx}"
-
-
-def decode_repo_and_workflow_key(graphql_key: str) -> Tuple[str, int]:
-    """
-    Decode a key used to alias a GraphQL query for a specific workflow file. These keys are of
-    the form `repo123workflow456`, which indicate that the query was for the repo with GHTorrent
-    repo_id of 123 and workflow filename at index 456 in the project's project_workflows_dict
-    entry. A tuple is returned, containing the repo_id (str) and workflow filename index (int).
-    """
-
-    temp = graphql_key.split('workflow')
-    repo_id, workflow_idx = temp[0].replace('repo', ''), temp[1]
-    return str(repo_id), int(workflow_idx)
-
-
 def build_dup_workflow_warning(repo_id, workflow_filename):
     return f"WARNING: Workflow file {workflow_filename} from repo with ID {repo_id} has already been retrieved, will replace."
+
+
+def build_dup_branch_name_warning(repo_id):
+    return f"WARNING: Default branch name for repo with ID {repo_id} has already been retrieved, will replace."
 
 
 def get_from_github(slug: str, output_filename: OutputFile = None, params: OptionalParams = None):
@@ -144,6 +126,17 @@ def get_all_workflow_runs(owner: str, repo: str, branch: str, output_filename: O
     )
 
 
+def build_graphql_query_default_branch(id: str, owner: str, name: str) -> str:
+    """Build a GitHub API GraphQL query to get the name of the default branch of a given repo."""
+    return f"""
+    {id}: repository(owner: "{owner}", name: "{name}") {{
+        defaultBranchRef {{
+            name
+        }}
+    }}
+    """
+
+
 def build_graphql_query_workflow_filenames(id: str, owner: str, name: str) -> str:
     """Build a GitHub API GraphQL query to get the filenames of all workflows defined in a given
     project (repository). Workflows are presumed to exist at `HEAD:.github/workflows/`."""
@@ -172,6 +165,36 @@ def build_graphql_query_workflow_file(id: str, owner: str, name: str, filename: 
         }}
     }}
     """
+
+
+def parse_graphql_query_default_branch(res: Dict[str, Any]) -> Dict[str, str]:
+    """
+    Parse the response to a GitHub API GraphQL query getting the default branch name for given
+    repos. A dictionary is returned, mapping each repo ID str (eg. `123`) to the repo's default
+    branch name. Example return value:
+    ```
+    {
+        '123': 'main',
+        '456': 'master',
+        ...
+    }
+    """
+
+    new_branch_names_dict = {}
+
+    if 'data' in res and res['data'] is not None:
+        for repo_key, data_val in res['data'].items():
+            if data_val is not None:
+                repo_val = res['data'][repo_key]
+                if 'defaultBranchRef' in repo_val and repo_val['defaultBranchRef'] is not None:
+                    branch_obj = repo_val['defaultBranchRef']
+                    if 'name' in branch_obj and branch_obj['name'] is not None:
+                        # Decode the repo ID, and add the default branch name to the dict
+                        default_branch_name = branch_obj['name']
+                        repo_id = decode_repo_key(repo_key)
+                        new_branch_names_dict[repo_id] = default_branch_name
+
+    return new_branch_names_dict
 
 
 def parse_graphql_query_workflow_filenames(res: str):
@@ -335,6 +358,50 @@ def combine_partitioned_workflow_files(query_response_filenames: List[str], old_
                 }
 
     return all_project_workflows_dict
+
+
+def get_default_branch_for_repos(projects: List[Dict[str, str]],
+                                 output_filename: OutputFile = None) -> Dict[str, str]:
+    """
+    Get the default branch name for all projects / repos in a given list. Returns a dict mapping
+    repo ID str to default branch name.
+    """
+    queries = [build_graphql_query_default_branch(
+        p['id'], p['owner'], p['name']) for p in projects]
+    query = ' '.join(queries)
+    query = f"{{ {query} }}"
+    return parse_graphql_query_default_branch(run_graphql_query(query, output_filename))
+
+
+def get_default_branch_for_repos_partitioned(partitioned_projects: List[List[Dict[str, str]]],
+                                             num_partitions: int,
+                                             partition_output_prefix: str) -> Dict[str, str]:
+    """
+    Get the default branch name for all projects / repos (given in a partitioned list, to support
+    partitioned API requests). Returns a dict mapping repo ID str to default branch name.
+    """
+    branch_names = {}
+    for i, projects_partition in enumerate(partitioned_projects):
+        # Get branch names for projects in this partition
+        partition_output_filename = f"{partition_output_prefix}_split{i}.json"
+        print(
+            f"Getting default branch names for projects in partition {i+1}/{num_partitions}...")
+        new_branch_names = get_default_branch_for_repos(
+            projects_partition, partition_output_filename)
+
+        # Combine all results with those from this partition
+        for repo_id_str, def_branch_name in new_branch_names.items():
+            if repo_id_str in branch_names:
+                print(build_dup_branch_name_warning(repo_id_str))
+            branch_names[repo_id_str] = def_branch_name
+
+    output_filename = f"{partition_output_prefix}.json"
+    if output_filename is not None:
+        write_dict_to_json_file(branch_names, output_filename)
+        print(
+            f"Wrote default branch names for {len(branch_names.keys())} projects to {output_filename}")
+
+    return branch_names
 
 
 def get_workflows_for_repos(repos: List[Dict[str, str]],
