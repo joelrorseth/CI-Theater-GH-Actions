@@ -1,4 +1,4 @@
-from typing import Any, Dict, Union
+from typing import Any, Dict, Optional
 from requests import get, post, packages
 from data_io import OutputFile, write_dict_to_json_file
 import time
@@ -8,11 +8,13 @@ packages.urllib3.disable_warnings()
 
 RETRY_COUNT = 10
 
-OptionalAny = Union[Any, None]
+OptionalAny = Optional[Any]
+OptionalParams = Optional[Dict[str, str]]
 
 
-def get_from_url(url: str, auth: OptionalAny, output_filename: OutputFile = None) -> Any:
-    res = get(url, auth=auth, verify=False, timeout=30)
+def get_from_url(url: str, output_filename: OutputFile = None,
+                 auth: OptionalAny = None, params: OptionalParams = None) -> Any:
+    res = get(url, auth=auth, params=params, verify=False, timeout=30)
     res_json = res.json()
     write_dict_to_json_file(res_json, output_filename)
     return res_json

@@ -1,9 +1,9 @@
 import os
 import pandas as pd
 import numpy as np
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 from requests.utils import quote
-from base_api_client import get_from_url, post_to_url
+from base_api_client import OptionalParams, get_from_url, post_to_url
 from data_io import OutputFile, read_dict_from_json_file, write_dict_to_json_file
 
 API_USERNAME = os.environ['api_username']
@@ -39,8 +39,47 @@ def build_dup_workflow_warning(repo_id, workflow_filename):
     return f"WARNING: Workflow file {workflow_filename} from repo with ID {repo_id} has already been retrieved, will replace."
 
 
-def get_from_github(slug: str, output_filename: OutputFile = None):
-    return get_from_url(f"{GITHUB_BASE_URL}{slug}", AUTH, output_filename)
+def get_from_github(slug: str, output_filename: OutputFile = None, params: OptionalParams = None):
+    return get_from_url(f"{GITHUB_BASE_URL}{slug}", output_filename, AUTH, params)
+
+
+def get_from_github_paged(slug: str, per_page: int, max_pages: int,
+                          params: OptionalParams = None, output_filename: OutputFile = None,
+                          res_key: Optional[str] = None) -> List[Any]:
+    """
+    Repeatedly execute a GET request (to page through all available results), then return the
+    aggregation of all paged results (in a combined list). The `per_page` size (the number of
+    results per page) and `max_pages` (maximum number of pages to execute) are also required. An
+    optional `res_key` can be provided to extract the aggregated response objects 1 layer deep in
+    the json (ie. res[res_key]), else the response will be assumed to be an array of objects to be
+    aggregated.
+    """
+    def execute_request_for_page(page: int):
+        params_with_page = params if params is not None else {}
+        params_with_page['per_page'] = per_page
+        params_with_page['page'] = page
+        return get_from_url(
+            url=f"{GITHUB_BASE_URL}{slug}",
+            output_filename=None,
+            auth=AUTH,
+            params=params_with_page
+        )
+
+    page, all_responses = 1, []
+    while page <= max_pages:
+        # Get workflow runs for current page, add to the running list
+        page_res = execute_request_for_page(page)
+        page_workflow_runs = page_res[res_key] if res_key is not None else page_res
+        all_responses.extend(page_workflow_runs)
+
+        # Stop paging when we recieve less results than the page size requested
+        if len(page_workflow_runs) < per_page:
+            break
+        page += 1
+
+    # Now that all results have been aggregated, write results to JSON file
+    write_dict_to_json_file(all_responses, output_filename)
+    return all_responses
 
 
 def run_graphql_query(query: str, output_filename: OutputFile = None):
@@ -69,11 +108,39 @@ def get_workflow(owner: str, repo: str, workflow_id_or_filename: str,
     )
 
 
-def get_workflow_runs(owner: str, repo: str, workflow_id_or_filename: str,
-                      output_filename: OutputFile = None):
-    return get_from_github(
+def get_runs_for_workflow(owner: str, repo: str, branch: str, workflow_id_or_filename: str,
+                          output_filename: OutputFile = None, max_pages: Optional[int] = 3,
+                          per_page: Optional[int] = 100) -> List[Any]:
+    """
+    Return all workflow runs for a workflow (identified by its workflow_id or file name).
+    Only workflows triggered on the specified branch, by a push event, are returned. Results will
+    be aggregated across pages, if specified.
+    https://docs.github.com/en/rest/reference/actions#list-workflow-runs
+    """
+    return get_from_github_paged(
         f"/repos/{owner}/{repo}/actions/workflows/{workflow_id_or_filename}/runs",
-        output_filename
+        per_page,
+        max_pages,
+        {'branch': branch, 'event': 'push', 'exclude_pull_requests': True},
+        output_filename,
+        'workflow_runs'
+    )
+
+
+def get_all_workflow_runs(owner: str, repo: str, branch: str, output_filename: OutputFile = None,
+                          max_pages: Optional[int] = 20, per_page: Optional[int] = 100) -> List[Any]:
+    """
+    Return all workflow runs for a repository. Only workflows triggered on the specified branch,
+    by a push event, are returned. Results will be aggregated across pages, if specified.
+    https://docs.github.com/en/rest/reference/actions#list-workflow-runs-for-a-repository
+    """
+    return get_from_github_paged(
+        f"/repos/{owner}/{repo}/actions/runs",
+        per_page,
+        max_pages,
+        {'branch': branch, 'event': 'push', 'exclude_pull_requests': True},
+        output_filename,
+        'workflow_runs'
     )
 
 
