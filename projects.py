@@ -59,7 +59,7 @@ def load_projects_partitioned(input_projects_path: str,
     # Keep pertinent columns only
     repos = [
         {
-            'id': f"repo{r['repo_id']}",
+            'id': encode_repo_key(r['repo_id']),
             'owner': r['url'].split('/')[-2],
             'name': r['url'].split('/')[-1]
         }
