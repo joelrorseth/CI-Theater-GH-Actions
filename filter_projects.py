@@ -7,7 +7,6 @@
 
 import os
 import pandas as pd
-import numpy as np
 from data_io import (
     read_df_from_csv_file,
     read_dict_from_json_file,
@@ -25,6 +24,7 @@ from github_api_client import (
     get_workflow_files_partitioned,
     get_workflows_for_repos
 )
+from projects import load_projects_partitioned
 
 NUM_MEMBER_PARTITIONS = 10
 NUM_WORKFLOW_PARTITIONS = 1000
@@ -107,26 +107,9 @@ def filter_by_member_count(output_projects_path: str):
 def filter_by_workflow_files(input_projects_path: str, output_projects_path: str, output_workflows_path: str):
     print("[!] Filtering out projects that don't have any GitHub Actions workflow files")
 
-    # Load the current set of projects to be filtered
-    print("Loading projects...")
-    projects_df = pd.read_csv(
-        input_projects_path,
-        index_col=False,
-        names=PROJECT_COLS
-    )
-    print(f"Loaded {projects_df.shape[0]} projects")
-
-    repos = [
-        {
-            'id': f"repo{r['repo_id']}",
-            'owner': r['url'].split('/')[-2],
-            'name': r['url'].split('/')[-1]
-        }
-        for r in projects_df.to_dict(orient="records")
-    ]
-
     # Partition the projects, then query for workflows contained in the projects of each partition
-    repos_partitions = np.array_split(repos, NUM_WORKFLOW_PARTITIONS)
+    repos_partitions = load_projects_partitioned(input_projects_path, PROJECT_COLS, NUM_WORKFLOW_PARTITIONS)
+
     for i in range(0, len(repos_partitions)):
         repos_partition = repos_partitions[i]
         actions_output_path = f"data/actions_projects_gte5_members_split{i}.json"
