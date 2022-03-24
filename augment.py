@@ -19,7 +19,8 @@ def get_default_branches_for_projects(projects_path: str, default_branches_path_
 
 
 if __name__ == "__main__":
-    final_projects_path = 'data/final_projects.csv'
+    #final_projects_path = 'data/final_projects.csv'
+    final_projects_path = 'data/projects_gte5_members_using_actions.csv'
     default_branches_path_prefix = 'data/default_branches'
 
     # Get default branch names
