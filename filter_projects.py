@@ -143,7 +143,7 @@ def filter_by_workflow_files(input_projects_path: str, output_projects_path: str
 
 
 def filter_by_ci_workflow_files(input_projects_path: str, output_projects_path: str,
-                                input_workflows_path: str, output_workflows_path: str,
+                                input_workflow_filenames_path: str, output_workflows_path: str,
                                 yaml_workflows_json_prefix: str):
     print("[!] Filtering out projects lacking any workflow file that use GitHub Actions for CI")
 
@@ -153,7 +153,8 @@ def filter_by_ci_workflow_files(input_projects_path: str, output_projects_path: 
     print(f"Loaded {projects_df.shape[0]} projects")
 
     # Load the current set of workflow filenames associated to the projects
-    project_workflows_dict = read_dict_from_json_file(input_workflows_path)
+    project_workflows_dict = read_dict_from_json_file(
+        input_workflow_filenames_path)
 
     # Create augmented dict containing workflow YAML filename and text content
     get_workflow_files_partitioned(
@@ -168,9 +169,18 @@ def filter_by_ci_workflow_files(input_projects_path: str, output_projects_path: 
         f"{yaml_workflows_json_prefix}.json")
     write_dict_to_json_file(ci_project_workflows_dict, output_workflows_path)
 
-    # TODO: Create new filtered projects df, omitting projects that no longer have any valid workflows
+    # Create new filtered projects df, omitting projects that no longer have any valid workflows
+    remaining_repo_ids = [int(repo_id)
+                          for repo_id in ci_project_workflows_dict.keys()]
+    projects_df = projects_df[projects_df.repo_id.isin(remaining_repo_ids)]
+    print(
+        f"There are {len(remaining_repo_ids)} projects using GitHub Actions for CI")
+    write_df_to_csv_file(projects_df, output_projects_path)
 
-    print('[!] Done')
+    print(f"[!] Wrote filtered projects file to {output_projects_path}")
+    print(f"[!] Wrote filtered workflows file to {output_workflows_path}")
+    print("[!] Done filtering out projects that don't use GitHub Actions for CI")
+    print(f"[!] # remaining projects: {projects_df.shape[0]}")
 
 
 if __name__ == "__main__":
