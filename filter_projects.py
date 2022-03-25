@@ -183,10 +183,30 @@ def filter_by_ci_workflow_files(input_projects_path: str, output_projects_path: 
     print(f"[!] # remaining projects: {projects_df.shape[0]}")
 
 
+def filter_forked_projects(input_projects_path: str, output_projects_path: str):
+    print("[!] Filtering out projects that are forked from another project")
+
+    # Load the current set of projects to be filtered
+    print("Loading projects...")
+    projects_df = read_df_from_csv_file(input_projects_path, PROJECT_COLS)
+    print(f"Loaded {projects_df.shape[0]} projects")
+
+    # Remove projects whose 'forked_from' attribute is non-empty
+    projects_df = projects_df[projects_df['forked_from'].isnull()]
+    print(
+        f"Removed forked projects, there are now {projects_df.shape[0]} projects")
+    write_df_to_csv_file(projects_df, output_projects_path)
+
+    print(f"[!] Wrote filtered projects file to {output_projects_path}")
+    print("[!] Done filtering out forked projects")
+    print(f"[!] # remaining projects: {projects_df.shape[0]}")
+
+
 if __name__ == "__main__":
     projects_gte5_members_path = 'data/projects_gte5_members.csv'
     projects_gte5_members_using_actions_path = 'data/projects_gte5_members_using_actions.csv'
     projects_gte5_members_using_actions_ci_path = 'data/projects_gte5_members_using_action_ci.csv'
+    projects_final_path = 'data/projects_final_path.csv'
 
     workflows_projects_gte5_members_path = 'data/workflows_projects_gte5_members.json'
     ci_workflows_projects_gte5_members_path = 'data/ci_workflows_projects_gte5_members.json'
@@ -206,4 +226,8 @@ if __name__ == "__main__":
         workflows_projects_gte5_members_path,
         ci_workflows_projects_gte5_members_path,
         yaml_workflows_projects_gte5_members_json_prefix
+    )
+    filter_forked_projects(
+        projects_gte5_members_using_actions_ci_path,
+        projects_final_path
     )
