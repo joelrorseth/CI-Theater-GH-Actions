@@ -1,4 +1,5 @@
 import os
+from typing import Any, Dict
 from base_api_client import get_from_url
 from data_io import OutputFile
 
@@ -6,11 +7,43 @@ COVERALLS_BASE_URL = os.environ['coveralls_base_url']
 
 
 def get_from_coveralls(slug: str, output_filename: OutputFile = None):
-    return get_from_url(f"{COVERALLS_BASE_URL}{slug}", output_filename)
+    # Coveralls returns HTML for 404 results, so allow JSON decoding error (returns empty dict)
+    return get_from_url(
+        f"{COVERALLS_BASE_URL}{slug}",
+        output_filename,
+        allow_json_decode_error=True
+    )
 
 
-def get_coveralls_report(owner: str, repo: str, output_filename: OutputFile = None):
+def get_coveralls_report_for_github_repo(owner: str, repo: str, output_filename: OutputFile = None):
     return get_from_coveralls(
-        f"/{owner}/{repo}.json?page=1",
+        f"/github/{owner}/{repo}.json?page=1",
+        output_filename
+    )
+
+
+def get_coveralls_report_for_github_commit(github_commit_sha: str,
+                                           output_filename: OutputFile = None) -> Dict[str, Any]:
+    """
+    Get the Coveralls code coverage report for a given GitHub commit SHA. A dict is returned,
+    which will be empty if no such report exists. Example return value:
+    ```
+    {
+        "created_at": "2018-01-30T20:05:10Z",
+        "url": null,
+        "commit_message": "Release 2.0.0",
+        "branch": "main",
+        "committer_name": "Bob Smith",
+        "committer_email": "bobsmith@gmail.com",
+        "commit_sha": "da6fed7e00bb55a127041c1364e145ccccc11111",
+        "repo_name": "bobsmith/myproject",
+        "badge_url": "https://s3.amazonaws.com/assets.coveralls.io/badges/coveralls_100.svg",
+        "coverage_change": 100.0,
+        "covered_percent": 100.0
+    }
+    ```
+    """
+    return get_from_coveralls(
+        f"/builds/{github_commit_sha}.json",
         output_filename
     )
