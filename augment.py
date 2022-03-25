@@ -50,6 +50,7 @@ def get_workflow_runs(projects_path: str, workflows_path: str, default_branches_
     default_branches_dict = read_dict_from_json_file(default_branches_path)
 
     # Verify that workflows and default branches exist for all projects
+    print('Verifying that all projects have workflow and default branch data...')
     num_projects_missing_stuff = 0
     for project in projects:
         if project['id'] not in workflows_dict:
@@ -101,3 +102,4 @@ if __name__ == "__main__":
     # Get workflow runs (build history)
     get_workflow_runs(projects_final_path,
                       ci_workflows_final_path, default_branches_path)
+
