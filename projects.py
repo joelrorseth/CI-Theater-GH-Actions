@@ -74,7 +74,7 @@ def load_projects(input_projects_path: str,
     # Keep pertinent columns only
     return [
         {
-            'id': encode_repo_key(r['repo_id']) if should_encode_repo_key else r['repo_id'],
+            'id': encode_repo_key(r['repo_id']) if should_encode_repo_key else str(r['repo_id']),
             'owner': r['url'].split('/')[-2],
             'name': r['url'].split('/')[-1]
         }
