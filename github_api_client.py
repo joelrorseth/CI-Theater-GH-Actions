@@ -36,12 +36,14 @@ def get_from_github_paged(slug: str, per_page: int, max_pages: int,
     the json (ie. res[res_key]), else the response will be assumed to be an array of objects to be
     aggregated.
     """
+    full_url = f"{GITHUB_BASE_URL}{slug}"
+    
     def execute_request_for_page(page: int):
         params_with_page = params if params is not None else {}
         params_with_page['per_page'] = per_page
         params_with_page['page'] = page
         return get_from_url(
-            url=f"{GITHUB_BASE_URL}{slug}",
+            url=full_url,
             output_filename=None,
             auth=AUTH,
             params=params_with_page
@@ -49,8 +51,25 @@ def get_from_github_paged(slug: str, per_page: int, max_pages: int,
 
     page, all_responses = 1, []
     while page <= max_pages:
-        # Get workflow runs for current page, add to the running list
+        # Get workflow runs for current page
         page_res = execute_request_for_page(page)
+
+        # Check for unexpected omission of res_key in res body, if specified
+        if res_key is not None and res_key not in page_res:
+            if 'message' in page_res:
+                # We skip 'Not Found' errors, add empty list in case previous pages were non-empty
+                if page_res['message'] == 'Not Found':
+                    print(f"WARNING: GET {full_url} (page {page}) returned 'Not Found', skipping...")
+                    page_res[res_key] = []
+                else:
+                    print(f"ERROR: GET {full_url} (page {page}) returned message: {page_res['message']}, aborting...")
+                    exit()
+            else:
+                print(f"ERROR: Response to GET {full_url} (page {page}) is missing key '{res_key}', aborting...")
+                print(page_res)
+                exit()
+
+        # Add workflow runs to the running list
         page_workflow_runs = page_res[res_key] if res_key is not None else page_res
         all_responses.extend(page_workflow_runs)
 
