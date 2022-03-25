@@ -157,8 +157,7 @@ def filter_by_ci_workflow_files(input_projects_path: str, output_projects_path: 
         projects_df,
         project_workflows_dict,
         NUM_YAML_PARTITIONS,
-        yaml_workflows_json_prefix,
-        f"{yaml_workflows_json_prefix}.json"
+        yaml_workflows_json_prefix
     )
 
     # TODO: Check the contents of each workflow to determine if it actually uses CI
