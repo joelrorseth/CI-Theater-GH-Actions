@@ -192,7 +192,7 @@ def filter_forked_projects(input_projects_path: str, output_projects_path: str):
     print(f"Loaded {projects_df.shape[0]} projects")
 
     # Remove projects whose 'forked_from' attribute is non-empty
-    projects_df = projects_df[projects_df['forked_from'].isnull()]
+    projects_df = projects_df[projects_df['forked_from'] == "\\N"]
     print(
         f"Removed forked projects, there are now {projects_df.shape[0]} projects")
     write_df_to_csv_file(projects_df, output_projects_path)
@@ -206,10 +206,12 @@ if __name__ == "__main__":
     projects_gte5_members_path = 'data/projects_gte5_members.csv'
     projects_gte5_members_using_actions_path = 'data/projects_gte5_members_using_actions.csv'
     projects_gte5_members_using_actions_ci_path = 'data/projects_gte5_members_using_action_ci.csv'
-    projects_final_path = 'data/projects_final_path.csv'
+    projects_unique_gte5_members_using_ci_path = 'data/projects_unique_gte5_members_using_ci.csv'
+    projects_final_path = 'data/projects_final.csv'
 
     workflows_projects_gte5_members_path = 'data/workflows_projects_gte5_members.json'
     ci_workflows_projects_gte5_members_path = 'data/ci_workflows_projects_gte5_members.json'
+    ci_workflows_final_path = 'data/ci_workflows_final.json'
 
     yaml_workflows_projects_gte5_members_json_prefix = 'data/yaml_workflows_projects_gte5_members'
 
@@ -229,5 +231,13 @@ if __name__ == "__main__":
     )
     filter_forked_projects(
         projects_gte5_members_using_actions_ci_path,
-        projects_final_path
+        projects_unique_gte5_members_using_ci_path
     )
+
+    print('[!] All filtering stages are now finished')
+    os.system(f"cp {projects_unique_gte5_members_using_ci_path} {projects_final_path}")
+    os.system(f"cp {ci_workflows_projects_gte5_members_path} {ci_workflows_final_path}")
+    print(f"[!] Wrote final projects file to {projects_final_path}")
+    print(f"[!] Wrote final workflows file to {ci_workflows_final_path}")
+    print('[!] Done filtering.')
+
