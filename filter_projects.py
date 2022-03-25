@@ -148,6 +148,7 @@ def filter_by_ci_workflow_files(input_projects_path: str, output_projects_path: 
     print("[!] Filtering out projects lacking any workflow file that use GitHub Actions for CI")
 
     # Load the current set of projects to be filtered
+    # TODO: Use projects.py loader
     print("Loading projects...")
     projects_df = read_df_from_csv_file(input_projects_path, PROJECT_COLS)
     print(f"Loaded {projects_df.shape[0]} projects")
@@ -187,6 +188,7 @@ def filter_forked_projects(input_projects_path: str, output_projects_path: str):
     print("[!] Filtering out projects that are forked from another project")
 
     # Load the current set of projects to be filtered
+    # TODO: Use projects.py loader
     print("Loading projects...")
     projects_df = read_df_from_csv_file(input_projects_path, PROJECT_COLS)
     print(f"Loaded {projects_df.shape[0]} projects")
