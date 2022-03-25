@@ -1,7 +1,8 @@
+import time
+from json import JSONDecodeError
 from typing import Any, Dict, Optional
 from requests import get, post, packages
 from data_io import OutputFile, write_dict_to_json_file
-import time
 
 # Disable certificate validation warnings
 packages.urllib3.disable_warnings()
@@ -13,9 +14,24 @@ OptionalParams = Optional[Dict[str, str]]
 
 
 def get_from_url(url: str, output_filename: OutputFile = None,
-                 auth: OptionalAny = None, params: OptionalParams = None) -> Any:
+                 auth: OptionalAny = None, params: OptionalParams = None,
+                 allow_json_decode_error: bool = False) -> Dict[Any, Any]:
+    """
+    Execute a GET request to a given URL. The response body will be deserialized from JSON into
+    a dict, which is written to an output file (if provided), then returned. If the response may
+    not be in JSON format (perhaps it is HTML, which means parsing will throw JSONDecodeError),
+    set `allow_json_decode_error=True` to return an empty dict, otherwise JSONDecodeError will
+    be raised. 
+    """
     res = get(url, auth=auth, params=params, verify=False, timeout=30)
-    res_json = res.json()
+    try:
+        res_json = res.json()
+    except JSONDecodeError as e:
+        if allow_json_decode_error:
+            res_json = {}
+        else:
+            raise e
+
     write_dict_to_json_file(res_json, output_filename)
     return res_json
 
