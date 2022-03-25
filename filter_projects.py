@@ -25,6 +25,7 @@ from github_api_client import (
     get_workflows_for_repos
 )
 from projects import load_projects_partitioned
+from workflow import get_workflows_using_ci
 
 NUM_MEMBER_PARTITIONS = 10
 NUM_WORKFLOW_PARTITIONS = 1000
@@ -108,7 +109,8 @@ def filter_by_workflow_files(input_projects_path: str, output_projects_path: str
     print("[!] Filtering out projects that don't have any GitHub Actions workflow files")
 
     # Partition the projects, then query for workflows contained in the projects of each partition
-    repos_partitions = load_projects_partitioned(input_projects_path, PROJECT_COLS, NUM_WORKFLOW_PARTITIONS)
+    repos_partitions = load_projects_partitioned(
+        input_projects_path, PROJECT_COLS, NUM_WORKFLOW_PARTITIONS)
 
     for i in range(0, len(repos_partitions)):
         repos_partition = repos_partitions[i]
@@ -124,7 +126,8 @@ def filter_by_workflow_files(input_projects_path: str, output_projects_path: str
         query_responses)
 
     # Extract repo_ids for projects that contained at least 1 workflow
-    remaining_repo_ids = [int(repo_id) for repo_id in project_workflows_dict.keys()]
+    remaining_repo_ids = [int(repo_id)
+                          for repo_id in project_workflows_dict.keys()]
     projects_df = projects_df[projects_df.repo_id.isin(remaining_repo_ids)]
     print(
         f"There are {len(remaining_repo_ids)} projects containing GitHub Actions workflow(s)")
@@ -152,7 +155,7 @@ def filter_by_ci_workflow_files(input_projects_path: str, output_projects_path: 
     # Load the current set of workflow filenames associated to the projects
     project_workflows_dict = read_dict_from_json_file(input_workflows_path)
 
-    # Combine the projects and workflow info into objects for the GraphQL query
+    # Create augmented dict containing workflow YAML filename and text content
     get_workflow_files_partitioned(
         projects_df,
         project_workflows_dict,
@@ -160,7 +163,13 @@ def filter_by_ci_workflow_files(input_projects_path: str, output_projects_path: 
         yaml_workflows_json_prefix
     )
 
-    # TODO: Check the contents of each workflow to determine if it actually uses CI
+    # Create new filtered workflows dict, omitting workflows that don't actually use CI
+    ci_project_workflows_dict = get_workflows_using_ci(
+        f"{yaml_workflows_json_prefix}.json")
+    write_dict_to_json_file(ci_project_workflows_dict, output_workflows_path)
+
+    # TODO: Create new filtered projects df, omitting projects that no longer have any valid workflows
+
     print('[!] Done')
 
 
@@ -188,4 +197,3 @@ if __name__ == "__main__":
         ci_workflows_projects_gte5_members_path,
         yaml_workflows_projects_gte5_members_json_prefix
     )
-

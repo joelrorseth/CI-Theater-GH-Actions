@@ -423,10 +423,12 @@ def get_workflow_files(workflow_queries: List[Dict[str, str]], output_filename: 
 def get_workflow_files_partitioned(projects_df: pd.DataFrame,
                                    project_workflows_dict: Dict[str, Dict[str, str]],
                                    num_partitions: int,
-                                   partition_output_prefix: str) -> None:
+                                   partition_output_prefix: str) -> Dict[str, Dict[str, Dict[str, str]]]:
     """
-    Get the specified set of workflow files (their YAML content) for a specified set of projects,
-    while partitioning GitHub API GraphQL requests.
+    Get the text (YAML) content of all workflow files in a given dict (`project_workflows_dict`).
+    More specifically, return an augmented version of `project_workflows_dict` that contains the
+    YAML content of each workflow file, in addition to the workflow filename already present.
+    Workflow file content is queried from the GitHub API GraphQL, in multiple partitioned requests.
     Example `project_workflows_dict`:
     ```
     {
