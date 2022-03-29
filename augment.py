@@ -6,6 +6,7 @@
 #
 
 import os
+from typing import Any, Dict, List
 from data_io import read_dict_from_json_file
 from github_api_client import get_default_branch_for_repos_partitioned, get_runs_for_workflow
 from projects import encode_repo_and_workflow_key, load_projects, load_projects_partitioned
@@ -29,6 +30,29 @@ def encode_workflow_runs_filename(repo_id: str, workflow_idx_str: str) -> str:
     return f"workflow_runs_{encode_repo_and_workflow_key(repo_id, workflow_idx_str)}.json"
 
 
+def verify_projects_have_augmented_data(projects: List[Dict[str, str]],
+                                        augmented_data_dict: Dict[str, Dict[str, Any]]) -> None:
+    """
+    Verify that all projects have an associated entry in a dict of augmented data dicts.
+    If any project is missing any augmented data, abort program execution.
+    """
+    num_projects_missing_stuff = 0
+    print('Verifying that all projects have required augmented data...')
+
+    # Verify that each project has an entry in all dictionaries containing augmented data
+    for project in projects:
+        for augmented_data_name, augmented_data in augmented_data_dict.items():
+            if project['id'] not in augmented_data:
+                print(
+                    f"ERROR: Missing {augmented_data_name} for project with ID {project['id']}")
+                num_projects_missing_stuff += 1
+
+    # If any project is missing any augmented data, exit
+    if num_projects_missing_stuff > 0:
+        print('ERROR: One or more projects are missing required augmented data, aborting!')
+        exit()
+
+
 def get_default_branches_for_projects(projects_path: str, default_branches_path_prefix: str) -> None:
     print(f"[!] Retrieving the default branch name for each project")
     partitioned_projects = load_projects_partitioned(
@@ -50,22 +74,8 @@ def get_workflow_runs(projects_path: str, workflows_path: str, default_branches_
     default_branches_dict = read_dict_from_json_file(default_branches_path)
 
     # Verify that workflows and default branches exist for all projects
-    print('Verifying that all projects have workflow and default branch data...')
-    num_projects_missing_stuff = 0
-    for project in projects:
-        if project['id'] not in workflows_dict:
-            print(
-                f"ERROR: Missing workflows for project with ID {project['id']}")
-            num_projects_missing_stuff += 1
-        elif project['id'] not in default_branches_dict:
-            print(
-                f"ERROR: Missing default branch for project with ID {project['id']}")
-            num_projects_missing_stuff += 1
-
-    if num_projects_missing_stuff > 0:
-        print(
-            f"ERROR: {num_projects_missing_stuff} projects are missing data, aborting!")
-        return
+    verify_projects_have_augmented_data(
+        projects, {'workflows': workflows_dict, 'default branch': default_branches_dict})
 
     # Get workflow runs for all workflows in all projects
     # NOTE: This will take a while, and may likely require restarting due to GitHub API rate limits
@@ -102,4 +112,3 @@ if __name__ == "__main__":
     # Get workflow runs (build history)
     get_workflow_runs(projects_final_path,
                       ci_workflows_final_path, default_branches_path)
-
