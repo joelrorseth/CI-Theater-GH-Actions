@@ -6,10 +6,12 @@
 #
 
 import os
+from datetime import datetime
 from typing import Any, Dict, List
+from coveralls_api_client import get_coveralls_report_for_github_commit
 from data_io import read_dict_from_json_file
 from github_api_client import get_default_branch_for_repos_partitioned, get_runs_for_workflow
-from projects import encode_repo_and_workflow_key, load_projects, load_projects_partitioned
+from projects import encode_repo_and_workflow_key, encode_repo_key, load_projects, load_projects_partitioned
 
 # Number of workflow runs to fetch (ie. build history window)
 NUM_PARTITIONS_DEFAULT_BRANCH = 60
@@ -28,6 +30,15 @@ def encode_workflow_runs_filename(repo_id: str, workflow_idx_str: str) -> str:
     the file contains workflow runs for workflow 456 in repo 123.
     """
     return f"workflow_runs_{encode_repo_and_workflow_key(repo_id, workflow_idx_str)}.json"
+
+
+def encode_coveralls_report_filename(repo_id: str, sha: str) -> str:
+    """
+    Encode a filename for a JSON file containing all workflow runs for a given project / workflow.
+    Produces a filename of the form `workflow_runs_repo123workflow456.json`, which indicates that
+    the file contains workflow runs for workflow 456 in repo 123.
+    """
+    return f"coveralls_report_repo{repo_id}sha{sha}.json"
 
 
 def verify_projects_have_augmented_data(projects: List[Dict[str, str]],
@@ -98,6 +109,54 @@ def get_workflow_runs(projects_path: str, workflows_path: str, default_branches_
     print('[!] Done retrieving workflow runs')
 
 
+def get_coveralls_info(projects_path: str, workflows_path: str) -> None:
+    print('[!] Retrieving Coveralls code coverage info for each project')
+    reports_found = 0
+
+    # Load projects and workflows
+    projects = load_projects(projects_path, False)
+    workflows_dict = read_dict_from_json_file(workflows_path)
+    verify_projects_have_augmented_data(
+        projects, {'workflows': workflows_dict})
+
+    # Get Coveralls report for each project
+    for i, project in enumerate(projects):
+        print(f"Getting Coveralls report for project {i+1}/{len(projects)}")
+
+        # Get SHAs (identifiers) for the head commits of every workflow run
+        proj_commits = {}
+        for workflow_idx_str, _ in workflows_dict[project['id']].items():
+            workflow_runs_filename = f"data/{encode_workflow_runs_filename(project['id'], workflow_idx_str)}"
+            if not os.path.isfile(workflow_runs_filename):
+                print(
+                    f"ERROR: Workflow runs file does not exist at {workflow_runs_filename}, aborting!")
+                exit()
+
+            workflow_runs = read_dict_from_json_file(workflow_runs_filename)
+            for run in workflow_runs:
+                proj_commits[run['created_at']] = run['head_sha']
+
+        # Sort the commit SHAs by workflow run date (get newest commits first)
+        ordered_proj_commits = sorted(
+            proj_commits.items(),
+            key=lambda x: datetime.strptime(x[0], '%Y-%m-%dT%H:%M:%SZ'),
+            reverse=True
+        )
+
+        # Get the Coveralls report associated with the newest commit
+        # If no such report exists, a file will still be created with an empty report
+        newest_commit_sha = ordered_proj_commits[0][1]
+        if get_coveralls_report_for_github_commit(
+            newest_commit_sha,
+            f"data/{encode_coveralls_report_filename(project['id'], newest_commit_sha)}"
+        ):
+            reports_found += 1
+
+    print(
+        f"Found Coveralls reports for {reports_found}/{len(projects)} projects")
+    print('[!] Done retrieving Coveralls code coverage info')
+
+
 if __name__ == "__main__":
     projects_final_path = 'data/projects_final.csv'
     ci_workflows_final_path = 'data/ci_workflows_final.json'
@@ -112,3 +171,6 @@ if __name__ == "__main__":
     # Get workflow runs (build history)
     get_workflow_runs(projects_final_path,
                       ci_workflows_final_path, default_branches_path)
+
+    # Get Coveralls info
+    get_coveralls_info(projects_final_path, ci_workflows_final_path)
