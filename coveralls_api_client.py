@@ -15,9 +15,39 @@ def get_from_coveralls(slug: str, output_filename: OutputFile = None):
     )
 
 
-def get_coveralls_report_for_github_repo(owner: str, repo: str, output_filename: OutputFile = None):
+def get_coveralls_report_for_github_repo(owner: str, repo: str, page: int = 1,
+                                         output_filename: OutputFile = None) -> Dict[str, Any]:
+    """
+    Get Coveralls code coverage reports for a given GitHub repo. A dict is returned,
+    which contains a list of builds in reverse chronological order (ie. newest first). If no
+    record of this repo exists in Coveralls, an empty dict is returned. A maximum of 10 builds
+    is returned, so use the `page` parameter to page through results chronologically.
+    ```
+    {
+        "page": 1,
+        "pages": 41,
+        "total": 408,
+        "builds": [
+            {
+                "created_at": "2018-01-30T20:05:10Z",
+                "url": null,
+                "commit_message": "Release 2.0.0",
+                "branch": "main",
+                "committer_name": "Bob Smith",
+                "committer_email": "bobsmith@gmail.com",
+                "commit_sha": "da6fed7e00bb55a127041c1364e145ccccc11111",
+                "repo_name": "bobsmith/myproject",
+                "badge_url": "https://s3.amazonaws.com/assets.coveralls.io/badges/coveralls_100.svg",
+                "coverage_change": 100.0,
+                "covered_percent": 100.0
+            },
+            ...
+        ]
+    }
+    ```
+    """
     return get_from_coveralls(
-        f"/github/{owner}/{repo}.json?page=1",
+        f"/github/{owner}/{repo}.json?page={page}",
         output_filename
     )
 
