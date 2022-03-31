@@ -8,10 +8,10 @@
 import os
 from datetime import datetime, timedelta
 from typing import Any, Dict, List
-from coveralls_api_client import get_coveralls_report_for_github_commit, get_latest_coveralls_report_in_date_range
+from coveralls_api_client import get_latest_coveralls_report_in_date_range
 from data_io import read_dict_from_json_file, write_dict_to_json_file
 from github_api_client import GITHUB_DATE_FORMAT, get_default_branch_for_repos_partitioned, get_runs_for_workflow
-from projects import encode_repo_and_workflow_key, encode_repo_key, load_projects, load_projects_partitioned
+from projects import encode_repo_and_workflow_key, load_projects, load_projects_partitioned
 
 # Number of workflow runs to fetch (ie. build history window)
 NUM_PARTITIONS_DEFAULT_BRANCH = 60
@@ -128,7 +128,7 @@ def get_coveralls_info(projects_path: str, workflows_path: str, default_branches
 
     # Get Coveralls report for each project
     for i, project in enumerate(projects):
-        print(f"Getting Coveralls report for project {i+1}/{len(projects)}")
+        print(f"Getting Coveralls report for project {i+1}/{len(projects)} (num found = {reports_found})")
 
         # Get SHAs (identifiers) for the head commits of every workflow run
         proj_commits = {}
@@ -198,6 +198,6 @@ if __name__ == "__main__":
     # Get workflow runs (build history)
     get_workflow_runs(projects_final_path,
                       ci_workflows_final_path, default_branches_path)
-
+    
     # Get Coveralls info
-    get_coveralls_info(projects_final_path, ci_workflows_final_path)
+    get_coveralls_info(projects_final_path, ci_workflows_final_path, default_branches_path)
