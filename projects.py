@@ -56,7 +56,8 @@ def load_projects(input_projects_path: str,
         {
             'id': 'repo123', # Use param to decide whether to encode this
             'owner': 'bob',
-            'name': 'myproject'
+            'name': 'myproject',
+            'language': 'Java'
         },
         ...
     ]
@@ -76,7 +77,8 @@ def load_projects(input_projects_path: str,
         {
             'id': encode_repo_key(r['repo_id']) if should_encode_repo_key else str(r['repo_id']),
             'owner': r['url'].split('/')[-2],
-            'name': r['url'].split('/')[-1]
+            'name': r['url'].split('/')[-1],
+            'language': r['language']
         }
         for r in projects_df.to_dict(orient="records")
     ]
@@ -94,7 +96,8 @@ def load_projects_partitioned(input_projects_path: str, num_partitions: int,
             {
                 'id': 'repo123', # Use param to decide whether to encode this
                 'owner': 'bob',
-                'name': 'myproject'
+                'name': 'myproject',
+                'language': 'Java'
             },
             ...
         ],
