@@ -6,11 +6,11 @@
 #
 
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Dict, List
-from coveralls_api_client import get_coveralls_report_for_github_commit
+from coveralls_api_client import get_coveralls_report_for_github_commit, get_latest_coveralls_report_in_date_range
 from data_io import read_dict_from_json_file, write_dict_to_json_file
-from github_api_client import get_default_branch_for_repos_partitioned, get_runs_for_workflow
+from github_api_client import GITHUB_DATE_FORMAT, get_default_branch_for_repos_partitioned, get_runs_for_workflow
 from projects import encode_repo_and_workflow_key, encode_repo_key, load_projects, load_projects_partitioned
 
 # Number of workflow runs to fetch (ie. build history window)
@@ -64,6 +64,22 @@ def verify_projects_have_augmented_data(projects: List[Dict[str, str]],
         exit()
 
 
+def load_projects_workflows_branches(projects_path: str, workflows_path: str, default_branches_path: str):
+    """
+    Load the projects, along with workflow and default branch data. Verify all augmented data,
+    before returning the project, workflow, and default branch dictionaries as a tuple.
+    """
+    projects = load_projects(projects_path, False)
+    workflows_dict = read_dict_from_json_file(workflows_path)
+    default_branches_dict = read_dict_from_json_file(default_branches_path)
+
+    # Verify that workflows and default branches exist for all projects
+    verify_projects_have_augmented_data(
+        projects, {'workflows': workflows_dict, 'default branch': default_branches_dict})
+
+    return projects, workflows_dict, default_branches_dict
+
+
 def get_default_branches_for_projects(projects_path: str, default_branches_path_prefix: str) -> None:
     print(f"[!] Retrieving the default branch name for each project")
     partitioned_projects = load_projects_partitioned(
@@ -79,14 +95,8 @@ def get_workflow_runs(projects_path: str, workflows_path: str, default_branches_
     print(
         f"[!] Retrieving the {NUM_WORKFLOW_RUNS} most recent runs for each project workflow")
 
-    # Load the projects, along with workflow and default branch data
-    projects = load_projects(projects_path, False)
-    workflows_dict = read_dict_from_json_file(workflows_path)
-    default_branches_dict = read_dict_from_json_file(default_branches_path)
-
-    # Verify that workflows and default branches exist for all projects
-    verify_projects_have_augmented_data(
-        projects, {'workflows': workflows_dict, 'default branch': default_branches_dict})
+    projects, workflows_dict, default_branches_dict = load_projects_workflows_branches(
+        projects_path, workflows_path, default_branches_path)
 
     # Get workflow runs for all workflows in all projects
     # NOTE: This will take a while, and may likely require restarting due to GitHub API rate limits
@@ -109,15 +119,12 @@ def get_workflow_runs(projects_path: str, workflows_path: str, default_branches_
     print('[!] Done retrieving workflow runs')
 
 
-def get_coveralls_info(projects_path: str, workflows_path: str) -> None:
+def get_coveralls_info(projects_path: str, workflows_path: str, default_branches_path: str) -> None:
     print('[!] Retrieving Coveralls code coverage info for each project')
     reports_found = 0
 
-    # Load projects and workflows
-    projects = load_projects(projects_path, False)
-    workflows_dict = read_dict_from_json_file(workflows_path)
-    verify_projects_have_augmented_data(
-        projects, {'workflows': workflows_dict})
+    projects, workflows_dict, default_branches_dict = load_projects_workflows_branches(
+        projects_path, workflows_path, default_branches_path)
 
     # Get Coveralls report for each project
     for i, project in enumerate(projects):
@@ -139,28 +146,35 @@ def get_coveralls_info(projects_path: str, workflows_path: str) -> None:
         # Sort the commit SHAs by workflow run date (get newest commits first)
         ordered_proj_commits = sorted(
             proj_commits.items(),
-            key=lambda x: datetime.strptime(x[0], '%Y-%m-%dT%H:%M:%SZ'),
+            key=lambda x: datetime.strptime(x[0], GITHUB_DATE_FORMAT),
             reverse=True
         )
 
         coveralls_report_filename = f"data/{encode_coveralls_report_filename(project['id'])}"
         report = {}
-        
+
         if len(ordered_proj_commits) == 0:
             # No workflow runs existed
             # TODO: Does this project really use CI? We should probably filter these cases out
             write_dict_to_json_file(report, coveralls_report_filename)
         elif not os.path.isfile(coveralls_report_filename):
-            # Get the Coveralls report associated with the newest commit
-            newest_commit_sha = ordered_proj_commits[0][1]
-            report = get_coveralls_report_for_github_commit(
-                newest_commit_sha,
-                coveralls_report_filename
+            # Get the latest Coveralls report created within 7 days before the latest build run
+            max_report_date = datetime.strptime(
+                ordered_proj_commits[0][0], GITHUB_DATE_FORMAT)
+            min_report_date = max_report_date - timedelta(days=7)
+
+            report = get_latest_coveralls_report_in_date_range(
+                project['owner'],
+                project['name'],
+                default_branches_dict[project['id']],
+                min_report_date,
+                max_report_date,
+                output_filename=coveralls_report_filename
             )
         else:
             # Report has already been retrieved, read it from disk
             report = read_dict_from_json_file(coveralls_report_filename)
-        
+
         # If no such report exists, a file will still be created with an empty report
         if report:
             reports_found += 1
@@ -187,4 +201,3 @@ if __name__ == "__main__":
 
     # Get Coveralls info
     get_coveralls_info(projects_final_path, ci_workflows_final_path)
-

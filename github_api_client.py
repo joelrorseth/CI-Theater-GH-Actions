@@ -10,6 +10,7 @@ from projects import decode_repo_and_workflow_key, decode_repo_key, encode_repo_
 API_USERNAME = os.environ['api_username']
 API_PASSWORD = os.environ['api_password']
 GITHUB_BASE_URL = os.environ['github_base_url']
+GITHUB_DATE_FORMAT = '%Y-%m-%dT%H:%M:%SZ'
 AUTH = (API_USERNAME, API_PASSWORD)
 
 
