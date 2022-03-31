@@ -16,7 +16,7 @@ def analyze_coverage(project_coverage_path: str, coverage_boxplot_img_path: str)
 if __name__ == '__main__':
     project_coverage_path = 'data/project_coverage.json'
 
-    coverage_boxplot_img_path = 'data/coverage_boxplot.png'
+    coverage_boxplot_img_path = 'figures/coverage_boxplot.png'
 
     # Produce a boxplot illustrating project test coverage by language
     analyze_coverage(project_coverage_path, coverage_boxplot_img_path)
