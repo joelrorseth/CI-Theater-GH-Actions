@@ -25,7 +25,7 @@ from github_api_client import (
     get_workflows_for_repos
 )
 from projects import load_projects_partitioned
-from workflow import get_workflows_using_ci
+from workflows import get_workflows_using_ci
 
 NUM_MEMBER_PARTITIONS = 10
 NUM_WORKFLOW_PARTITIONS = 1000
