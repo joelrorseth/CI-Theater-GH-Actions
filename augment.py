@@ -119,16 +119,18 @@ def get_workflow_runs(projects_path: str, workflows_path: str, default_branches_
     print('[!] Done retrieving workflow runs')
 
 
-def get_coveralls_info(projects_path: str, workflows_path: str, default_branches_path: str) -> None:
+def get_coveralls_info(projects_path: str, workflows_path: str, default_branches_path: str,
+                       project_coverage_path: str) -> None:
     print('[!] Retrieving Coveralls code coverage info for each project')
-    reports_found = 0
+    reports_found, reports_found_by_lang = 0, {}
 
     projects, workflows_dict, default_branches_dict = load_projects_workflows_branches(
         projects_path, workflows_path, default_branches_path)
 
     # Get Coveralls report for each project
     for i, project in enumerate(projects):
-        print(f"Getting Coveralls report for project {i+1}/{len(projects)} (num found = {reports_found})")
+        print(
+            f"Getting Coveralls report for project {i+1}/{len(projects)} (num found = {reports_found})")
 
         # Get SHAs (identifiers) for the head commits of every workflow run
         proj_commits = {}
@@ -175,12 +177,22 @@ def get_coveralls_info(projects_path: str, workflows_path: str, default_branches
             # Report has already been retrieved, read it from disk
             report = read_dict_from_json_file(coveralls_report_filename)
 
-        # If no such report exists, a file will still be created with an empty report
+        # Aggregate coverage by programming language
         if report:
             reports_found += 1
+            if project['language'] not in reports_found_by_lang:
+                reports_found_by_lang[project['language']] = []
+            reports_found_by_lang[project['language']].append(
+                report['covered_percent'])
 
     print(
         f"Found Coveralls reports for {reports_found}/{len(projects)} projects")
+
+    # Write project coverage to JSON file (will omit projects lacking Coveralls report)
+    write_dict_to_json_file(reports_found_by_lang, project_coverage_path)
+    for lang, coverages in reports_found_by_lang.items():
+        print(f"Found {len(coverages)} coverage reports for {lang} projects")
+
     print('[!] Done retrieving Coveralls code coverage info')
 
 
@@ -191,6 +203,8 @@ if __name__ == "__main__":
     default_branches_path_prefix = 'data/default_branches'
     default_branches_path = f"{default_branches_path_prefix}.json"
 
+    project_coverage_path = 'data/project_coverage.json'
+
     # Get default branch names
     get_default_branches_for_projects(
         projects_final_path, default_branches_path_prefix)
@@ -198,6 +212,7 @@ if __name__ == "__main__":
     # Get workflow runs (build history)
     get_workflow_runs(projects_final_path,
                       ci_workflows_final_path, default_branches_path)
-    
+
     # Get Coveralls info
-    get_coveralls_info(projects_final_path, ci_workflows_final_path, default_branches_path)
+    get_coveralls_info(projects_final_path, ci_workflows_final_path,
+                       default_branches_path, project_coverage_path)
