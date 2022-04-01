@@ -176,7 +176,7 @@ def filter_by_workflow_files(input_projects_path: str, output_projects_path: str
     # Get workflows for projects in each partition, if not already cached
     for i in range(0, len(repos_partitions)):
         print(
-            f"Querying GitHub Actions usage for projects (partition {i+1}/{NUM_WORKFLOW_PARTITIONS})...")
+            f"Finding GitHub Actions workflows in projects (partition {i+1}/{NUM_WORKFLOW_PARTITIONS})...")
         actions_output_path = f"{output_workflows_prefix}_split{i}.json"
         if not os.path.isfile(actions_output_path):
             repos_partition = repos_partitions[i]
@@ -198,7 +198,7 @@ def filter_by_workflow_files(input_projects_path: str, output_projects_path: str
                           for repo_id in project_workflows_dict.keys()]
     projects_df = projects_df[projects_df.repo_id.isin(remaining_repo_ids)]
     print(
-        f"There are {len(remaining_repo_ids)} projects containing GitHub Actions workflow(s)")
+        f"There are {len(remaining_repo_ids)} projects with at least 1 GitHub Actions workflow")
     print(
         f"{num_projects_before} projects were reduced to {projects_df.shape[0]}")
 
