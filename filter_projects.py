@@ -6,6 +6,7 @@
 #
 
 import os
+from typing import List
 import pandas as pd
 from data_io import (
     read_df_from_csv_file,
@@ -38,7 +39,7 @@ def get_initial_projects(output_projects_path: str):
     print("[!] Building initial set of projects by cross-referencing project members")
 
     if os.path.isfile(output_projects_path):
-        print("[!] Output file already exists, skipping...")
+        print(f"[!] {output_projects_path} already exists, skipping...")
         return
 
     # Load project_members and determine project membership count
@@ -88,7 +89,7 @@ def filter_forked_projects(input_projects_path: str, output_projects_path: str):
     print("[!] Filtering out projects that are forked from another project")
 
     if os.path.isfile(output_projects_path):
-        print("[!] Output file already exists, skipping...")
+        print(f"[!] {output_projects_path} already exists, skipping...")
         return
 
     # Remove projects whose 'forked_from' attribute is non-empty
@@ -101,6 +102,29 @@ def filter_forked_projects(input_projects_path: str, output_projects_path: str):
 
     print(f"[!] Wrote filtered projects file to {output_projects_path}")
     print("[!] Done filtering out forked projects")
+
+
+def filter_projects_by_lang(supported_languages: List[str], input_projects_path: str,
+                            output_projects_path: str):
+    print("[!] Filtering out projects that use an unsupported language")
+
+    if os.path.isfile(output_projects_path):
+        print(f"[!] {output_projects_path} already exists, skipping...")
+        return
+
+    projects_df = load_full_projects(input_projects_path)
+    num_projects_before = projects_df.shape[0]
+
+    # Keep only those projects whose language is in the set of allowed languages
+    print(set(projects_df['language']))
+    projects_df = projects_df[projects_df.language.isin(supported_languages)]
+
+    print(
+        f"{num_projects_before} projects were reduced to {projects_df.shape[0]}")
+    save_full_projects_df(projects_df, output_projects_path)
+
+    print(f"[!] Wrote filtered projects file to {output_projects_path}")
+    print("[!] Done filtering out projects that use an unsupported language")
 
 
 def filter_by_member_count(output_projects_path: str):
