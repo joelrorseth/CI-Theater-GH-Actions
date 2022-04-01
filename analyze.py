@@ -1,9 +1,10 @@
-from data_io import read_dict_from_json_file
+from data_io import read_dict_from_json_file, write_series_to_json_file
 from plot import plot_code_coverage_boxplots, plot_value_counts_histogram
 from projects import load_project_members
 
 
-def analyze_project_member_count(project_membership_count_dist_img_path: str):
+def analyze_project_member_count(project_membership_count_dist_img_path: str,
+                                 project_membership_count_dist_path: str):
     print("[!] Analyzing project member counts")
 
     # Count the number of members associated to each project
@@ -18,6 +19,8 @@ def analyze_project_member_count(project_membership_count_dist_img_path: str):
     member_count_counts = repo_member_counts.value_counts()
     print('Frequency of each member count:')
     print(member_count_counts)
+    write_series_to_json_file(
+        member_count_counts, project_membership_count_dist_path)
     plot_value_counts_histogram(
         member_count_counts,
         project_membership_count_dist_img_path
@@ -53,15 +56,16 @@ def analyze_coverage(project_coverage_path: str, coverage_boxplot_img_path: str)
 
 if __name__ == '__main__':
     project_coverage_path = 'data/project_coverage.json'
+    project_membership_count_dist_path = 'results/project_membership_count_dist.json'
 
     project_membership_count_dist_img_path = 'figures/project_membership_count_dist.png'
     coverage_boxplot_img_path = 'figures/coverage_boxplot.png'
 
     """
     # Produce a histogram illustrating the distribution of project member counts
-    analyze_project_member_count(project_membership_count_dist_img_path)
+    analyze_project_member_count(
+        project_membership_count_dist_img_path, project_membership_count_dist_path)
     """
 
     # Produce a boxplot illustrating project test coverage by language
     analyze_coverage(project_coverage_path, coverage_boxplot_img_path)
-

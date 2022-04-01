@@ -51,6 +51,6 @@ def read_df_from_csv_file(csv_file_path: str, column_names: Optional[List[str]] 
 
 
 def write_series_to_json_file(series: pd.Series, output_filename: OutputFile = None,
-                              write_index_col: Optional[bool] = False) -> None:
+                              write_index_col: Optional[bool] = True) -> None:
     if output_filename is not None:
         series.to_json(output_filename, index=write_index_col)
