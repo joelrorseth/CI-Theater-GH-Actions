@@ -31,7 +31,7 @@ from projects import (
 from workflows import get_workflows_using_ci
 
 NUM_MEMBER_PARTITIONS = 10
-NUM_WORKFLOW_PARTITIONS = 2000
+NUM_WORKFLOW_PARTITIONS = 1500
 NUM_YAML_PARTITIONS = 60
 
 
