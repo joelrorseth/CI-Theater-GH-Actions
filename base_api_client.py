@@ -7,7 +7,7 @@ from data_io import OutputFile, write_dict_to_json_file
 # Disable certificate validation warnings
 packages.urllib3.disable_warnings()
 
-RETRY_COUNT = 10
+RETRY_COUNT = 8
 
 OptionalAny = Optional[Any]
 OptionalParams = Optional[Dict[str, str]]
@@ -40,16 +40,21 @@ def post_to_url(url: str, json: Dict[str, Any], auth: OptionalAny,
                 output_filename: OutputFile = None) -> Any:
     # NOTE: GitHub API calls occassionally fail a few times in a row, attempt a few retries
     counter = 0
-    while counter < RETRY_COUNT:
+    while counter <= RETRY_COUNT:
         try:
             res = post(url, json=json, auth=auth)
             res_json = res.json()
             if res_json is None or not('data' in res_json) or res_json['data'] is None:
-                raise ValueError()
+                raise ValueError(f"POST {url} res_json['data'] is missing: {res_json}")
             write_dict_to_json_file(res_json, output_filename)
             return res_json
-        except:
-            print(f"Error occurred, retrying [{counter+1}/{RETRY_COUNT}]...")
-            time.sleep(3)
+        except Exception as e:
             counter += 1
-    print(f"ERROR: Exhausted all {RETRY_COUNT} retries")
+            if counter > RETRY_COUNT:
+                print('ERROR: Exhausted retries, printing exception and exiting...')
+                print(e)
+                exit()
+            else:
+                print(f"An error occurred, retrying ({counter}/{RETRY_COUNT})...")
+                time.sleep(counter*3)
+
