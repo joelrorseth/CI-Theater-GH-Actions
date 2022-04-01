@@ -93,7 +93,7 @@ def check_workflow_for_cmd(workflow: Dict[str, Any]) -> bool:
     return False
 
 
-def get_workflows_using_ci(workflows_filename: str) -> Dict[str, Dict[str, Dict[str, str]]]:
+def get_workflows_using_ci(workflows_filename: str) -> WorkflowInfoDict:
     """
     Given the filename of a JSON file containing project YAML workflows, return the subset of
     workflows that actually use CI. This definition of 'CI' is somewhat arbitrary, and is specific

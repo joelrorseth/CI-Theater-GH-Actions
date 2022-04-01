@@ -233,6 +233,7 @@ def filter_by_ci_workflow_files(input_projects_path: str, output_projects_path: 
     )
 
     # Create new filtered workflows dict, omitting workflows that don't actually use CI
+    print('Retrieved all workflow YAML contents, checking for CI usage...')
     ci_project_workflows_dict = get_workflows_using_ci(
         f"{yaml_workflows_json_prefix}.json")
 
