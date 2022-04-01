@@ -1,6 +1,56 @@
+"""
+The exact format of a workflows dict evolves over several stages of filtering. Therefore,
+its format will be different, depending on which stage it is built during. See examples
+and custom type aliases below.
+
+After stage 3 filter (checking for workflow files, retrieving workflow filenames):
+{
+    "123": [
+        { "name": "release.yml" },
+        { "name": "test.yml" },
+        ...
+    ],
+    ...
+}
+
+
+After stage 4 filter (checking for actual CI usage, retrieving workflow YAML content):
+{
+    "123": {
+        "0": { "name": "release.yml", "text": "These are release YAML contents" },
+        "1": { "name": "test.yml", "text": "These are test YAML contents" },
+        ...
+    },
+    ...
+}
+"""
+
 from typing import Any, Dict, List, Union
-from data_io import read_dict_from_json_file, read_dict_from_yaml_str
 from run_commands import match_any_build_cmd_regex
+from data_io import (
+    read_dict_from_json_file,
+    read_dict_from_yaml_str,
+    write_dict_to_json_file
+)
+
+WorkflowFilenameDict = Dict[str, List[Dict[str, str]]]
+WorkflowInfoDict = Dict[str, Dict[str, Dict[str, str]]]
+
+
+def load_workflows(input_project_workflows_path: str) -> Dict:
+    """
+    Read project workflow information from a JSON file into a dict. The exact format of the dict
+    may vary (ie. stage 3 retrieves workflow filenames, stage 4 retrieves YAML content).
+    """
+    return read_dict_from_json_file(input_project_workflows_path)
+
+
+def save_workflows(project_workflows_dict: Dict, output_workflows_path: str) -> None:
+    """
+    Write a dictionary containing project workflows to a JSON file. The exact format of the
+    dictionary may vary (ie. stage 3 retrieves workflow filenames, stage 4 retrieves YAML content).
+    """
+    write_dict_to_json_file(project_workflows_dict, output_workflows_path)
 
 
 def check_workflow_jobs_for_cmd(workflow: Union[Dict[str, Any], List[Any]]) -> bool:

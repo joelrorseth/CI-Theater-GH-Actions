@@ -11,8 +11,7 @@ import pandas as pd
 from data_io import (
     read_df_from_csv_file,
     read_dict_from_json_file,
-    write_df_to_csv_file,
-    write_dict_to_json_file
+    write_df_to_csv_file
 )
 from github_api_client import (
     combine_partitioned_workflow_filenames,
@@ -28,7 +27,7 @@ from projects import (
     load_projects_and_partition,
     save_full_projects_df
 )
-from workflows import get_workflows_using_ci
+from workflows import get_workflows_using_ci, save_workflows
 
 NUM_MEMBER_PARTITIONS = 10
 NUM_WORKFLOW_PARTITIONS = 1500
@@ -210,7 +209,7 @@ def filter_by_workflow_files(input_projects_path: str, output_projects_path: str
 
     # Write the remaining projects and their found workflows to output files
     save_full_projects_df(projects_df, output_projects_path)
-    write_dict_to_json_file(project_workflows_dict, output_workflows_path)
+    save_workflows(project_workflows_dict, output_workflows_path)
 
     print(f"[!] Wrote filtered projects file to {output_projects_path}")
     print(f"[!] Wrote workflow filenames file to {output_workflows_path}")
@@ -222,13 +221,14 @@ def filter_by_ci_workflow_files(input_projects_path: str, output_projects_path: 
                                 yaml_workflows_json_prefix: str):
     print("[!] Filtering out projects lacking any workflow file that use GitHub Actions for CI")
 
-    # Load the current set of projects to be filtered
-    # TODO: Use projects.py loader
-    print("Loading projects...")
-    projects_df = read_df_from_csv_file(input_projects_path, PROJECT_COLS)
-    print(f"Loaded {projects_df.shape[0]} projects")
+    if os.path.isfile(output_projects_path) and os.path.isfile(output_workflows_path):
+        print(
+            f"[!] {output_projects_path} and {output_workflows_path} already exist, skipping...")
+        return
 
-    # Load the current set of workflow filenames associated to the projects
+    # Load the current set of projects and workflow filenames
+    projects_df = load_full_projects(input_projects_path)
+    num_projects_before = projects_df.shape[0]
     project_workflows_dict = read_dict_from_json_file(
         input_workflow_filenames_path)
 
@@ -243,20 +243,22 @@ def filter_by_ci_workflow_files(input_projects_path: str, output_projects_path: 
     # Create new filtered workflows dict, omitting workflows that don't actually use CI
     ci_project_workflows_dict = get_workflows_using_ci(
         f"{yaml_workflows_json_prefix}.json")
-    write_dict_to_json_file(ci_project_workflows_dict, output_workflows_path)
+    save_workflows(ci_project_workflows_dict, output_workflows_path)
 
     # Create new filtered projects df, omitting projects that no longer have any valid workflows
     remaining_repo_ids = [int(repo_id)
                           for repo_id in ci_project_workflows_dict.keys()]
     projects_df = projects_df[projects_df.repo_id.isin(remaining_repo_ids)]
+    save_full_projects_df(projects_df, output_projects_path)
+
     print(
         f"There are {len(remaining_repo_ids)} projects using GitHub Actions for CI")
-    write_df_to_csv_file(projects_df, output_projects_path)
+    print(
+        f"{num_projects_before} projects were reduced to {projects_df.shape[0]}")
 
     print(f"[!] Wrote filtered projects file to {output_projects_path}")
     print(f"[!] Wrote filtered workflows file to {output_workflows_path}")
     print("[!] Done filtering out projects that don't use GitHub Actions for CI")
-    print(f"[!] # remaining projects: {projects_df.shape[0]}")
 
 
 """

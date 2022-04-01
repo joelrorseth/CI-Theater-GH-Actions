@@ -6,6 +6,7 @@ from requests.utils import quote
 from base_api_client import OptionalParams, get_from_url, post_to_url
 from data_io import OutputFile, read_dict_from_json_file, write_dict_to_json_file
 from projects import decode_repo_and_workflow_key, decode_repo_key, encode_repo_and_workflow_key
+from workflows import WorkflowFilenameDict, WorkflowInfoDict
 
 API_USERNAME = os.environ['api_username']
 API_PASSWORD = os.environ['api_password']
@@ -38,7 +39,7 @@ def get_from_github_paged(slug: str, per_page: int, max_pages: int,
     aggregated.
     """
     full_url = f"{GITHUB_BASE_URL}{slug}"
-    
+
     def execute_request_for_page(page: int):
         params_with_page = params if params is not None else {}
         params_with_page['per_page'] = per_page
@@ -60,13 +61,16 @@ def get_from_github_paged(slug: str, per_page: int, max_pages: int,
             if 'message' in page_res:
                 # We skip 'Not Found' errors, add empty list in case previous pages were non-empty
                 if page_res['message'] == 'Not Found':
-                    print(f"WARNING: GET {full_url} (page {page}) returned 'Not Found', skipping...")
+                    print(
+                        f"WARNING: GET {full_url} (page {page}) returned 'Not Found', skipping...")
                     page_res[res_key] = []
                 else:
-                    print(f"ERROR: GET {full_url} (page {page}) returned message: {page_res['message']}, aborting...")
+                    print(
+                        f"ERROR: GET {full_url} (page {page}) returned message: {page_res['message']}, aborting...")
                     exit()
             else:
-                print(f"ERROR: Response to GET {full_url} (page {page}) is missing key '{res_key}', aborting...")
+                print(
+                    f"ERROR: Response to GET {full_url} (page {page}) is missing key '{res_key}', aborting...")
                 print(page_res)
                 exit()
 
@@ -250,7 +254,7 @@ def parse_graphql_query_workflow_filenames(res: str):
     return project_workflows_dict
 
 
-def parse_graphql_query_workflow_file(res: str, old_project_workflows_dict: Dict[str, Dict[str, str]]) -> Dict[str, List]:
+def parse_graphql_query_workflow_file(res: str, old_project_workflows_dict: WorkflowFilenameDict) -> Dict[str, List]:
     """
     Parse the response to a GitHub API GraphQL query getting workflow filnames for a set of
     projects. A dictionary is returned, mapping each repo key (eg. `repo123`) to a non-empty list
@@ -334,7 +338,8 @@ def combine_partitioned_workflow_filenames(query_response_filenames: List[str]):
     return all_project_workflows_dict
 
 
-def combine_partitioned_workflow_files(query_response_filenames: List[str], old_project_workflows_dict: Dict[str, Dict[str, str]]) -> Dict[str, Dict[str, Dict[str, str]]]:
+def combine_partitioned_workflow_files(query_response_filenames: List[str],
+                                       old_project_workflows_dict: WorkflowFilenameDict) -> WorkflowInfoDict:
     """
     Given a list of filenames, each whose file is a response to a (partitioned) query to get the
     content of all project workflows, combine the partitioned results into a single dictionary. A
@@ -452,8 +457,9 @@ def get_workflow_files_partitioned(projects_df: pd.DataFrame,
     Example `project_workflows_dict`:
     ```
     {
-        '123': [
-            {'name': 'release.yml'},
+        "123": [
+            { "name": "release.yml" },
+            { "name": "test.yml" },
             ...
         ],
         ...
@@ -462,12 +468,14 @@ def get_workflow_files_partitioned(projects_df: pd.DataFrame,
     Example return value:
     ```
     {
-        '123': {
-            '0': { "name": "release.yml", "text": "These are my YAML contents" },
+        "123": {
+            "0": { "name": "release.yml", "text": "These are release YAML contents" },
+            "1": { "name": "test.yml", "text": "These are test YAML contents" },
             ...
         },
         ...
     }
+    ```
     """
 
     # Flatten to get one dict for each project-workflow combo
