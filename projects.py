@@ -69,8 +69,10 @@ def load_project_members() -> pd.DataFrame:
     project_members_df.drop_duplicates(
         subset=['repo_id', 'user_id'], inplace=True)
 
+    num_associations = project_members_df.shape[0]
+    num_projects = project_members_df['repo_id'].nunique()
     print(
-        f"Loaded {project_members_df.shape[0]} unique project-member associations")
+        f"Loaded {num_associations} unique member associations to {num_projects} projects")
     return project_members_df
 
 
