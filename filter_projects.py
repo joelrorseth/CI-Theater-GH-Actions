@@ -80,7 +80,6 @@ def get_initial_projects(output_projects_path: str):
 
     # Concatenate all partitioned projects that passed the filter
     save_full_projects_df(filtered_projects_df, output_projects_path)
-    print(f"[!] Wrote filtered projects file to {output_projects_path}")
     print(f"[!] Done building initial set of projects")
 
 
@@ -98,8 +97,6 @@ def filter_forked_projects(input_projects_path: str, output_projects_path: str):
     print(
         f"{num_projects_before} projects were reduced to {projects_df.shape[0]}")
     save_full_projects_df(projects_df, output_projects_path)
-
-    print(f"[!] Wrote filtered projects file to {output_projects_path}")
     print("[!] Done filtering out forked projects")
 
 
@@ -121,8 +118,6 @@ def filter_projects_by_lang(supported_languages: List[str], input_projects_path:
     print(
         f"{num_projects_before} projects were reduced to {projects_df.shape[0]}")
     save_full_projects_df(projects_df, output_projects_path)
-
-    print(f"[!] Wrote filtered projects file to {output_projects_path}")
     print("[!] Done filtering out projects that use an unsupported language")
 
 
@@ -210,9 +205,6 @@ def filter_by_workflow_files(input_projects_path: str, output_projects_path: str
     # Write the remaining projects and their found workflows to output files
     save_full_projects_df(projects_df, output_projects_path)
     save_workflows(project_workflows_dict, output_workflows_path)
-
-    print(f"[!] Wrote filtered projects file to {output_projects_path}")
-    print(f"[!] Wrote workflow filenames file to {output_workflows_path}")
     print("[!] Done filtering out projects that don't have any GitHub Actions workflow files")
 
 
@@ -243,21 +235,19 @@ def filter_by_ci_workflow_files(input_projects_path: str, output_projects_path: 
     # Create new filtered workflows dict, omitting workflows that don't actually use CI
     ci_project_workflows_dict = get_workflows_using_ci(
         f"{yaml_workflows_json_prefix}.json")
-    save_workflows(ci_project_workflows_dict, output_workflows_path)
 
     # Create new filtered projects df, omitting projects that no longer have any valid workflows
     remaining_repo_ids = [int(repo_id)
                           for repo_id in ci_project_workflows_dict.keys()]
     projects_df = projects_df[projects_df.repo_id.isin(remaining_repo_ids)]
+    print(
+        f"There are {len(remaining_repo_ids)} projects using GitHub Actions for CI")
+
+    save_workflows(ci_project_workflows_dict, output_workflows_path)
     save_full_projects_df(projects_df, output_projects_path)
 
     print(
-        f"There are {len(remaining_repo_ids)} projects using GitHub Actions for CI")
-    print(
         f"{num_projects_before} projects were reduced to {projects_df.shape[0]}")
-
-    print(f"[!] Wrote filtered projects file to {output_projects_path}")
-    print(f"[!] Wrote filtered workflows file to {output_workflows_path}")
     print("[!] Done filtering out projects that don't use GitHub Actions for CI")
 
 
