@@ -32,6 +32,59 @@ NUM_WORKFLOW_PARTITIONS = 1000
 NUM_YAML_PARTITIONS = 60
 
 
+def get_initial_projects(output_projects_path: str):
+    print("[!] Building initial set of projects by cross-referencing project members")
+
+    if os.path.isfile(output_projects_path):
+        print("[!] Output file already exists, skipping...")
+        return
+
+    # Load project_members and determine project membership count
+    project_members_df = load_project_members()
+    repo_member_counts = project_members_df['repo_id'].value_counts()
+
+    # Filter out projects that don't have more than a single member (which is most)
+    repos_gte2 = repo_member_counts[repo_member_counts >= 2]
+    repos_gte2 = repos_gte2.index.values
+    project_members_df = project_members_df[project_members_df.repo_id.isin(
+        repos_gte2)]
+    print(
+        f"Filtering {len(repos_gte2)}/{len(repo_member_counts)} projects with < 2 members...")
+
+    filtered_projects_df = None
+    ghtorrent_projects_count = 0
+
+    for i in range(NUM_MEMBER_PARTITIONS):
+        # Load current partition of GHTorrent projects
+        print(
+            f"Loading GHTorrent projects (partition {i+1}/{NUM_MEMBER_PARTITIONS})...")
+        projects_path = f"{GHTORRENT_PATH}projects_split{i}.csv"
+        projects_df = pd.read_csv(
+            projects_path,
+            index_col=False,
+            names=PROJECT_COLS
+        )
+        ghtorrent_projects_count += projects_df.shape[0]
+
+        # Remove projects whom do not have adequate project membership
+        projects_df = projects_df[projects_df.repo_id.isin(
+            project_members_df['repo_id'])]
+
+        # Add to running DataFrame
+        if filtered_projects_df is not None:
+            filtered_projects_df = pd.concat(
+                [filtered_projects_df, projects_df])
+        else:
+            filtered_projects_df = projects_df
+
+    print(f"[!] {ghtorrent_projects_count} GHTorrent projects were reduced to {filtered_projects_df.shape[0]}")
+
+    # Concatenate all partitioned projects that passed the filter
+    write_df_to_csv_file(filtered_projects_df, output_projects_path)
+    print(f"[!] Wrote filtered projects file to {output_projects_path}")
+    print(f"[!] Done building initial set of projects")
+
+
 def filter_by_member_count(output_projects_path: str):
     print("[!] Filtering out projects with < 5 members")
 
