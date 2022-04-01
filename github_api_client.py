@@ -6,7 +6,7 @@ from requests.utils import quote
 from base_api_client import OptionalParams, get_from_url, post_to_url
 from data_io import OutputFile, read_dict_from_json_file, write_dict_to_json_file
 from projects import decode_repo_and_workflow_key, decode_repo_key, encode_repo_and_workflow_key
-from workflows import WorkflowFilenameDict, WorkflowInfoDict
+from workflows import WorkflowFilenameDict, WorkflowInfoDict, save_workflows
 
 API_USERNAME = os.environ['api_username']
 API_PASSWORD = os.environ['api_password']
@@ -446,14 +446,15 @@ def get_workflow_files(workflow_queries: List[Dict[str, str]], output_filename: 
 
 
 def get_workflow_files_partitioned(projects_df: pd.DataFrame,
-                                   project_workflows_dict: Dict[str, Dict[str, str]],
+                                   project_workflows_dict: WorkflowFilenameDict,
                                    num_partitions: int,
-                                   partition_output_prefix: str) -> Dict[str, Dict[str, Dict[str, str]]]:
+                                   partition_output_prefix: str) -> WorkflowInfoDict:
     """
     Get the text (YAML) content of all workflow files in a given dict (`project_workflows_dict`).
     More specifically, return an augmented version of `project_workflows_dict` that contains the
     YAML content of each workflow file, in addition to the workflow filename already present.
-    Workflow file content is queried from the GitHub API GraphQL, in multiple partitioned requests.
+    Workflow file content is queried from the GitHub GraphQL API in multiple partitioned requests.
+    If a response for a given partition has already been written to JSON, it is skipped.
     Example `project_workflows_dict`:
     ```
     {
@@ -480,7 +481,7 @@ def get_workflow_files_partitioned(projects_df: pd.DataFrame,
 
     # Flatten to get one dict for each project-workflow combo
     queries = []
-    for r in projects_df.to_dict(orient="records"):
+    for r in projects_df.to_dict(orient='records'):
         repo_id = str(r['repo_id'])
         workflow_filenames = project_workflows_dict[repo_id]
         for i, workflow_filename in enumerate(workflow_filenames):
@@ -496,11 +497,13 @@ def get_workflow_files_partitioned(projects_df: pd.DataFrame,
 
     # Execute a combined query for each partition
     for i in range(0, num_partitions):
-        query_partition = query_partitions[i]
-        output_path = f"{partition_output_prefix}_split{i}.json"
+        output_split_path = f"{partition_output_prefix}_split{i}.json"
         print(
-            f"Getting workflow YAML for projects in partition {i+1}/{num_partitions}...")
-        get_workflow_files(query_partition.tolist(), output_path)
+            f"Getting workflow YAML for projects (partition {i+1}/{num_partitions})...")
+
+        if not os.path.isfile(output_split_path):
+            query_partition = query_partitions[i]
+            get_workflow_files(query_partition.tolist(), output_split_path)
 
     # Combine the partitioned responses into a single dict
     new_workflows_dict = combine_partitioned_workflow_files(
@@ -509,10 +512,5 @@ def get_workflow_files_partitioned(projects_df: pd.DataFrame,
         project_workflows_dict
     )
 
-    output_filename = f"{partition_output_prefix}.json"
-    if output_filename is not None:
-        write_dict_to_json_file(new_workflows_dict, output_filename)
-        print(
-            f"Wrote YAML workflows for {len(new_workflows_dict.keys())} projects to {output_filename}")
-
+    save_workflows(new_workflows_dict, f"{partition_output_prefix}.json")
     return new_workflows_dict
