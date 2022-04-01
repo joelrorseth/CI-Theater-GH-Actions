@@ -13,19 +13,19 @@ from data_io import (
     write_df_to_csv_file,
     write_dict_to_json_file
 )
-from ghtorrent import (
-    GHTORRENT_PATH,
-    NULL_SYMBOL,
-    PROJECT_COLS,
-    PROJECT_MEMBERS_COLS,
-    PROJECT_MEMBERS_PATH
-)
 from github_api_client import (
     combine_partitioned_workflow_filenames,
     get_workflow_files_partitioned,
     get_workflows_for_repos
 )
-from projects import load_projects_partitioned
+from projects import (
+    GHTORRENT_PATH,
+    NULL_SYMBOL,
+    PROJECT_COLS,
+    PROJECT_MEMBERS_COLS,
+    PROJECT_MEMBERS_PATH,
+    load_projects_partitioned
+)
 from workflows import get_workflows_using_ci
 
 NUM_MEMBER_PARTITIONS = 10
@@ -238,9 +238,10 @@ if __name__ == "__main__":
     )
 
     print('[!] All filtering stages are now finished')
-    os.system(f"cp {projects_unique_gte5_members_using_ci_path} {projects_final_path}")
-    os.system(f"cp {ci_workflows_projects_gte5_members_path} {ci_workflows_final_path}")
+    os.system(
+        f"cp {projects_unique_gte5_members_using_ci_path} {projects_final_path}")
+    os.system(
+        f"cp {ci_workflows_projects_gte5_members_path} {ci_workflows_final_path}")
     print(f"[!] Wrote final projects file to {projects_final_path}")
     print(f"[!] Wrote final workflows file to {ci_workflows_final_path}")
     print('[!] Done filtering.')
-

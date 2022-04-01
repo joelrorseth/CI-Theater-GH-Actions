@@ -1,7 +1,14 @@
+import os
 import pandas as pd
 import numpy as np
 from typing import Dict, List, Tuple
-from ghtorrent import PROJECT_COLS
+
+GHTORRENT_PATH = os.environ['ghtorrent_path']
+PROJECT_MEMBERS_PATH = f"{GHTORRENT_PATH}project_members.csv"
+PROJECT_COLS = ['repo_id', 'url', 'owner_id', 'name', 'descriptor',
+                'language', 'created_at', 'forked_from', 'deleted', 'updated_at', 'dummy']
+PROJECT_MEMBERS_COLS = ['repo_id', 'user_id', 'created_at']
+NULL_SYMBOL = "\\N"
 
 
 def encode_repo_key(repo_id: str) -> str:
