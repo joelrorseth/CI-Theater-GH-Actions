@@ -80,7 +80,7 @@ def load_full_projects(input_projects_path: str, quiet: bool = False) -> pd.Data
     pd.DataFrame, without modifying the data in any way.
     """
     if not quiet:
-        print("Loading projects...")
+        print(f"Loading projects from {input_projects_path}...")
     projects_df = read_df_from_csv_file(input_projects_path, PROJECT_COLS)
     if not quiet:
         print(f"Loaded {projects_df.shape[0]} projects")
@@ -90,6 +90,7 @@ def load_full_projects(input_projects_path: str, quiet: bool = False) -> pd.Data
 def save_full_projects_df(projects_df: pd.DataFrame, output_projects_path: str) -> None:
     """Write a pd.DataFrame containing full projects to CSV file."""
     write_df_to_csv_file(projects_df, output_projects_path)
+    print(f"Wrote {projects_df.shape[0]} projects to {output_projects_path}")
 
 
 def load_projects(input_projects_path: str,
@@ -122,7 +123,7 @@ def load_projects(input_projects_path: str,
 
 
 def load_projects_and_partition(input_projects_path: str, num_partitions: int,
-                              should_encode_repo_key: bool = True) -> List[List[Dict[str, str]]]:
+                                should_encode_repo_key: bool = True) -> List[List[Dict[str, str]]]:
     """
     Read GitHub projects from the specified CSV file (ie. in GHTorrent format) into a list of
     dictionaries, then partition the dictionaries to form a list of lists of dictionaries.
