@@ -15,6 +15,7 @@ from data_io import (
 )
 from ghtorrent import (
     GHTORRENT_PATH,
+    NULL_SYMBOL,
     PROJECT_COLS,
     PROJECT_MEMBERS_COLS,
     PROJECT_MEMBERS_PATH
@@ -194,7 +195,7 @@ def filter_forked_projects(input_projects_path: str, output_projects_path: str):
     print(f"Loaded {projects_df.shape[0]} projects")
 
     # Remove projects whose 'forked_from' attribute is non-empty
-    projects_df = projects_df[projects_df['forked_from'] == "\\N"]
+    projects_df = projects_df[projects_df['forked_from'] == NULL_SYMBOL]
     print(
         f"Removed forked projects, there are now {projects_df.shape[0]} projects")
     write_df_to_csv_file(projects_df, output_projects_path)
