@@ -8,6 +8,7 @@
 import os
 from typing import List
 import pandas as pd
+from branches import load_default_branches
 from github_api_client import (
     combine_partitioned_workflow_filenames,
     get_workflow_files_partitioned,
@@ -205,3 +206,28 @@ def filter_by_using_ci(input_projects_path: str, output_projects_path: str,
     print(
         f"{num_projects_before} projects were reduced to {projects_df.shape[0]}")
     print("[!] Done filtering out projects that don't use GitHub Actions for CI")
+
+
+def filter_by_default_branch_existence(input_projects_path: str, output_projects_path: str,
+                                       default_branches_path: str):
+    print("[!] Filtering out projects for which we could not determine the default branch name")
+
+    if os.path.isfile(output_projects_path):
+        print(
+            f"[!] {output_projects_path} already exists, skipping...")
+        return
+
+    # Load full version of unpartitioned input projects
+    projects_df = load_full_projects(input_projects_path, quiet=True)
+    num_projects_before = projects_df.shape[0]
+    default_branches_dict = load_default_branches(default_branches_path)
+
+    # Remove projects that do not have an entry in the default branch dict
+    projects_df = projects_df[projects_df.repo_id.isin(
+        default_branches_dict.keys())]
+    print(
+        f"{num_projects_before} projects were reduced to {projects_df.shape[0]}")
+
+    # Write the remaining projects and their found workflows to output files
+    save_full_projects_df(projects_df, output_projects_path)
+    print("[!] Done filtering out projects with missing default branch name")

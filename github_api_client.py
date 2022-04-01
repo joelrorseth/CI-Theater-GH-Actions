@@ -4,6 +4,7 @@ import numpy as np
 from typing import Any, Dict, List, Optional
 from requests.utils import quote
 from base_api_client import OptionalParams, get_from_url, post_to_url
+from branches import save_default_branches
 from data_io import OutputFile, read_dict_from_json_file, write_dict_to_json_file
 from projects import decode_repo_and_workflow_key, decode_repo_key, encode_repo_and_workflow_key
 from workflows import WorkflowFilenameDict, WorkflowInfoDict, save_workflows
@@ -427,12 +428,7 @@ def get_default_branch_for_repos_partitioned(partitioned_projects: List[List[Dic
                 print(build_dup_branch_name_warning(repo_id_str))
             branch_names[repo_id_str] = def_branch_name
 
-    output_filename = f"{partition_output_prefix}.json"
-    if output_filename is not None:
-        write_dict_to_json_file(branch_names, output_filename)
-        print(
-            f"Wrote default branch names for {len(branch_names.keys())} projects to {output_filename}")
-
+    save_default_branches(branch_names, f"{partition_output_prefix}.json")
     return branch_names
 
 

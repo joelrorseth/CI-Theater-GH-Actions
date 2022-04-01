@@ -8,10 +8,12 @@
 import os
 from datetime import datetime, timedelta
 from typing import Any, Dict, List
+from branches import load_default_branches
 from coveralls_api_client import get_latest_coveralls_report_in_date_range
 from data_io import read_dict_from_json_file, write_dict_to_json_file
 from github_api_client import GITHUB_DATE_FORMAT, get_default_branch_for_repos_partitioned, get_runs_for_workflow
 from projects import encode_repo_and_workflow_key, load_projects, load_projects_and_partition
+from workflows import load_workflows
 
 # Number of workflow runs to fetch (ie. build history window)
 NUM_PARTITIONS_DEFAULT_BRANCH = 60
@@ -71,8 +73,8 @@ def load_projects_workflows_branches(projects_path: str, workflows_path: str, de
     before returning the project, workflow, and default branch dictionaries as a tuple.
     """
     projects = load_projects(projects_path, False)
-    workflows_dict = read_dict_from_json_file(workflows_path)
-    default_branches_dict = read_dict_from_json_file(default_branches_path)
+    workflows_dict = load_workflows(workflows_path)
+    default_branches_dict = load_default_branches(default_branches_path)
 
     # Verify that workflows and default branches exist for all projects
     verify_projects_have_augmented_data(
