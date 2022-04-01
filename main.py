@@ -1,5 +1,5 @@
-import math
 from augment import get_default_branches_for_projects, get_workflow_runs
+from config import DATA_FOLDER, SUPPORTED_LANGUAGES
 from filter_projects import (
     filter_by_default_branch_existence,
     filter_by_using_ci,
@@ -9,31 +9,12 @@ from filter_projects import (
     get_initial_projects
 )
 
-MEMBER_COUNT_BINS = [
-    [2, 4],
-    [5, 8],
-    [9, 15],
-    [16, 24],
-    [25, math.inf]
-]
-SUPPORTED_LANGUAGES = [
-    'Java',
-    'JavaScript',
-    'TypeScript',
-    'Ruby',
-    'C',
-    'C++',
-    'Python'
-]
-
-DATA_FOLDER = 'data'
 PROJECTS_STAGE_0_PATH = f"{DATA_FOLDER}/projects_stage_0.csv"
 PROJECTS_STAGE_1_PATH = f"{DATA_FOLDER}/projects_stage_1.csv"
 PROJECTS_STAGE_2_PATH = f"{DATA_FOLDER}/projects_stage_2.csv"
 PROJECTS_STAGE_3_PATH = f"{DATA_FOLDER}/projects_stage_3.csv"
 PROJECTS_STAGE_4_PATH = f"{DATA_FOLDER}/projects_stage_4.csv"
 PROJECTS_STAGE_5_PATH = f"{DATA_FOLDER}/projects_stage_5.csv"
-#FINAL_PROJECTS_PATH = PROJECTS_STAGE_4_PATH
 WORKFLOWS_STAGE_3_PREFIX = f"{DATA_FOLDER}/workflows_stage_3"
 WORKFLOW_YAML_STAGE_4_PREFIX = f"{DATA_FOLDER}/workflow_yaml_stage_3"
 WORKFLOWS_STAGE_3_PATH = f"{WORKFLOWS_STAGE_3_PREFIX}.json"

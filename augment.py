@@ -11,18 +11,19 @@ from typing import Any, Dict, List
 from branches import load_default_branches
 from coveralls_api_client import get_latest_coveralls_report_in_date_range
 from data_io import read_dict_from_json_file, write_dict_to_json_file
-from github_api_client import GITHUB_DATE_FORMAT, get_default_branch_for_repos_partitioned, get_runs_for_workflow
 from projects import encode_repo_and_workflow_key, load_projects, load_projects_and_partition
 from workflows import load_workflows
-
-# Number of workflow runs to fetch (ie. build history window)
-NUM_PARTITIONS_DEFAULT_BRANCH = 60
-
-# Github can retrieve a max of 100 results per page
-NUM_WORKFLOW_RUNS = 300
-
-MAX_GITHUB_RESULTS_PER_PAGE = 100
-NUM_PAGES = NUM_WORKFLOW_RUNS / MAX_GITHUB_RESULTS_PER_PAGE
+from config import (
+    MAX_GITHUB_RESULTS_PER_PAGE,
+    NUM_PAGES,
+    NUM_PARTITIONS_DEFAULT_BRANCH,
+    NUM_WORKFLOW_RUNS
+)
+from github_api_client import (
+    GITHUB_DATE_FORMAT,
+    get_default_branch_for_repos_partitioned,
+    get_runs_for_workflow
+)
 
 
 def encode_workflow_runs_path(workflow_runs_prefix: str, repo_id: str,
@@ -209,27 +210,3 @@ def get_coveralls_info(projects_path: str, workflows_path: str, default_branches
         print(f"Found {len(coverages)} coverage reports for {lang} projects")
 
     print('[!] Done retrieving Coveralls code coverage info')
-
-
-"""
-if __name__ == "__main__":
-    projects_final_path = 'data/projects_final.csv'
-    ci_workflows_final_path = 'data/ci_workflows_final.json'
-
-    default_branches_path_prefix = 'data/default_branches'
-    default_branches_path = f"{default_branches_path_prefix}.json"
-
-    project_coverage_path = 'data/project_coverage.json'
-
-    # Get default branch names
-    get_default_branches_for_projects(
-        projects_final_path, default_branches_path_prefix)
-
-    # Get workflow runs (build history)
-    get_workflow_runs(projects_final_path,
-                      ci_workflows_final_path, default_branches_path)
-
-    # Get Coveralls info
-    get_coveralls_info(projects_final_path, ci_workflows_final_path,
-                       default_branches_path, project_coverage_path)
-"""

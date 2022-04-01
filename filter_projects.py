@@ -9,6 +9,7 @@ import os
 from typing import List
 import pandas as pd
 from branches import load_default_branches
+from config import NUM_MEMBER_PARTITIONS, NUM_WORKFLOW_PARTITIONS, NUM_YAML_PARTITIONS
 from github_api_client import (
     combine_partitioned_workflow_filenames,
     get_workflow_files_partitioned,
@@ -23,10 +24,6 @@ from projects import (
     save_full_projects_df
 )
 from workflows import get_workflows_using_ci, load_workflows, save_workflows
-
-NUM_MEMBER_PARTITIONS = 10
-NUM_WORKFLOW_PARTITIONS = 1500
-NUM_YAML_PARTITIONS = 100
 
 
 def get_initial_projects(output_projects_path: str):
