@@ -22,8 +22,10 @@ from projects import (
     GHTORRENT_PATH,
     NULL_SYMBOL,
     PROJECT_COLS,
+    load_full_projects,
     load_project_members,
-    load_projects_partitioned
+    load_projects_partitioned,
+    save_full_projects_df
 )
 from workflows import get_workflows_using_ci
 
@@ -60,11 +62,7 @@ def get_initial_projects(output_projects_path: str):
         print(
             f"Loading GHTorrent projects (partition {i+1}/{NUM_MEMBER_PARTITIONS})...")
         projects_path = f"{GHTORRENT_PATH}projects_split{i}.csv"
-        projects_df = pd.read_csv(
-            projects_path,
-            index_col=False,
-            names=PROJECT_COLS
-        )
+        projects_df = load_full_projects(projects_path, quiet=True)
         ghtorrent_projects_count += projects_df.shape[0]
 
         # Remove projects whom do not have adequate project membership
@@ -81,9 +79,28 @@ def get_initial_projects(output_projects_path: str):
     print(f"[!] {ghtorrent_projects_count} GHTorrent projects were reduced to {filtered_projects_df.shape[0]}")
 
     # Concatenate all partitioned projects that passed the filter
-    write_df_to_csv_file(filtered_projects_df, output_projects_path)
+    save_full_projects_df(filtered_projects_df, output_projects_path)
     print(f"[!] Wrote filtered projects file to {output_projects_path}")
     print(f"[!] Done building initial set of projects")
+
+
+def filter_forked_projects(input_projects_path: str, output_projects_path: str):
+    print("[!] Filtering out projects that are forked from another project")
+
+    if os.path.isfile(output_projects_path):
+        print("[!] Output file already exists, skipping...")
+        return
+
+    # Remove projects whose 'forked_from' attribute is non-empty
+    projects_df = load_full_projects(input_projects_path)
+    num_projects_before = projects_df.shape[0]
+    projects_df = projects_df[projects_df['forked_from'] == NULL_SYMBOL]
+    print(
+        f"{num_projects_before} projects were reduced to {projects_df.shape[0]}")
+    save_full_projects_df(projects_df, output_projects_path)
+
+    print(f"[!] Wrote filtered projects file to {output_projects_path}")
+    print("[!] Done filtering out forked projects")
 
 
 def filter_by_member_count(output_projects_path: str):
@@ -101,11 +118,7 @@ def filter_by_member_count(output_projects_path: str):
     for i in range(NUM_MEMBER_PARTITIONS):
         print(f"Loading projects (partition {i+1}/{NUM_MEMBER_PARTITIONS})...")
         projects_path = f"{GHTORRENT_PATH}projects_split{i}.csv"
-        projects_df = pd.read_csv(
-            projects_path,
-            index_col=False,
-            names=PROJECT_COLS
-        )
+        projects_df = read_df_from_csv_file(projects_path, PROJECT_COLS)
         print(f"Loaded {projects_df.shape[0]} projects")
 
         # Remove projects whose repo_id is not in the set of repos having >= 5 members
@@ -206,26 +219,7 @@ def filter_by_ci_workflow_files(input_projects_path: str, output_projects_path: 
     print(f"[!] # remaining projects: {projects_df.shape[0]}")
 
 
-def filter_forked_projects(input_projects_path: str, output_projects_path: str):
-    print("[!] Filtering out projects that are forked from another project")
-
-    # Load the current set of projects to be filtered
-    # TODO: Use projects.py loader
-    print("Loading projects...")
-    projects_df = read_df_from_csv_file(input_projects_path, PROJECT_COLS)
-    print(f"Loaded {projects_df.shape[0]} projects")
-
-    # Remove projects whose 'forked_from' attribute is non-empty
-    projects_df = projects_df[projects_df['forked_from'] == NULL_SYMBOL]
-    print(
-        f"Removed forked projects, there are now {projects_df.shape[0]} projects")
-    write_df_to_csv_file(projects_df, output_projects_path)
-
-    print(f"[!] Wrote filtered projects file to {output_projects_path}")
-    print("[!] Done filtering out forked projects")
-    print(f"[!] # remaining projects: {projects_df.shape[0]}")
-
-
+"""
 if __name__ == "__main__":
     projects_gte5_members_path = 'data/projects_gte5_members.csv'
     projects_gte5_members_using_actions_path = 'data/projects_gte5_members_using_actions.csv'
@@ -266,3 +260,4 @@ if __name__ == "__main__":
     print(f"[!] Wrote final projects file to {projects_final_path}")
     print(f"[!] Wrote final workflows file to {ci_workflows_final_path}")
     print('[!] Done filtering.')
+"""
