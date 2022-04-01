@@ -1,5 +1,5 @@
 from data_io import read_dict_from_json_file, write_series_to_json_file
-from plot import plot_code_coverage_boxplots, plot_value_counts_histogram
+from plot import plot_code_coverage_boxplots, plot_project_member_counts_histogram
 from projects import load_project_members
 
 
@@ -21,7 +21,7 @@ def analyze_project_member_count(project_membership_count_dist_img_path: str,
     print(member_count_counts)
     write_series_to_json_file(
         member_count_counts, project_membership_count_dist_path)
-    plot_value_counts_histogram(
+    plot_project_member_counts_histogram(
         member_count_counts,
         project_membership_count_dist_img_path
     )
@@ -61,12 +61,11 @@ if __name__ == '__main__':
     project_membership_count_dist_img_path = 'figures/project_membership_count_dist.png'
     coverage_boxplot_img_path = 'figures/coverage_boxplot.png'
 
+    """
     # Produce a histogram illustrating the distribution of project member counts
     analyze_project_member_count(
         project_membership_count_dist_img_path, project_membership_count_dist_path)
-    
-    """
-    # Produce a boxplot illustrating project test coverage by language
-    analyze_coverage(project_coverage_path, coverage_boxplot_img_path)
     """
 
+    # Produce a boxplot illustrating project test coverage by language
+    analyze_coverage(project_coverage_path, coverage_boxplot_img_path)

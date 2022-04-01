@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import pandas as pd
+import numpy as np
 from typing import Any, Dict, List
 from data_io import OutputFile
 
@@ -22,7 +23,7 @@ def plot_boxplots(data: Dict[str, List[Any]], title: str, xlabel: str, ylabel: s
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
 
-    plt.show()
+    # plt.show()
     if output_filename is not None:
         plt.savefig(output_filename)
 
@@ -41,12 +42,15 @@ def plot_code_coverage_boxplots(coverage: Dict[str, List[Any]], output_filename:
                   'Distribution', output_filename)
 
 
-def plot_value_counts_histogram(value_counts: pd.Series, output_filename: OutputFile) -> None:
+def plot_project_member_counts_histogram(value_counts: pd.Series, output_filename: OutputFile) -> None:
     """
     Build a histogram to visualize a pandas value_counts() series.
     """
-    value_counts.hist(bins=50)
+    ax = value_counts.hist(bins=np.linspace(0, len(value_counts), 101))
+    ax.set_title('Distribution of Project Member Counts')
+    ax.set_xlabel('# Project Members')
+    ax.set_ylabel('Frequency')
 
-    plt.show()
+    # plt.show()
     if output_filename is not None:
         plt.savefig(output_filename)
