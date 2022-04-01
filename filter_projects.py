@@ -35,37 +35,11 @@ NUM_YAML_PARTITIONS = 60
 def filter_by_member_count(output_projects_path: str):
     print("[!] Filtering out projects with < 5 members")
 
-    # Load project_members table
+    # Load project_members and determine project membership count
     project_members_df = load_project_members()
-
-    # Remove any potential duplicate memberships
-    project_members_df.drop_duplicates(
-        subset=['repo_id', 'user_id'], inplace=True)
-    print(
-        f"There are {project_members_df.shape[0]} unique project-member associations")
-    print(
-        f"There are {project_members_df['repo_id'].nunique()} unique projects associated to members")
-    print(project_members_df)
-
     repo_member_counts = project_members_df['repo_id'].value_counts()
-    print(f"Member count mean: {repo_member_counts.mean()}")
-    print(f"Member count median: {repo_member_counts.median()}")
-    print(f"Member count std: {repo_member_counts.std()}")
 
-    """
-    repos_gte1 = repo_member_counts[repo_member_counts >= 1].shape[0]
-    repos_gte2 = repo_member_counts[repo_member_counts >= 2].shape[0]
-    repos_gte5 = repo_member_counts[repo_member_counts >= 5].shape[0]
-    repos_gte10 = repo_member_counts[repo_member_counts >= 10].shape[0]
-    repos_gte25 = repo_member_counts[repo_member_counts >= 25].shape[0]
-
-    print(f"{repos_gte1} repos have >= 1 member")
-    print(f"{repos_gte2} repos have >= 2 members")
-    print(f"{repos_gte5} repos have >= 5 members")
-    print(f"{repos_gte10} repos have >= 10 members")
-    print(f"{repos_gte25} repos have >= 25 members")
-    """
-
+    # Filter out projects with < 5 members
     repos_gte5 = repo_member_counts[repo_member_counts >= 5]
     repos_gte5 = repos_gte5.index.values
     print(f"There are {len(repos_gte5)} projects with >= 5 members")

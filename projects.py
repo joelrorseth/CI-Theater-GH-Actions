@@ -59,13 +59,19 @@ def load_project_members() -> pd.DataFrame:
     original columns are maintained ('repo_id', 'user_id', and 'created_at').
     """
     print('Loading project-member associations...')
-    df = pd.read_csv(
+    project_members_df = pd.read_csv(
         PROJECT_MEMBERS_PATH,
         index_col=False,
         names=PROJECT_MEMBERS_COLS
     )
-    print(f"Loaded {df.shape[0]} project-member associations")
-    return df
+
+    # Remove any potential duplicate memberships
+    project_members_df.drop_duplicates(
+        subset=['repo_id', 'user_id'], inplace=True)
+
+    print(
+        f"Loaded {project_members_df.shape[0]} unique project-member associations")
+    return project_members_df
 
 
 def load_projects(input_projects_path: str,
