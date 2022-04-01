@@ -1,10 +1,11 @@
 import matplotlib.pyplot as plt
+import pandas as pd
 from typing import Any, Dict, List
 from data_io import OutputFile
 
 
 def plot_boxplots(data: Dict[str, List[Any]], title: str, xlabel: str, ylabel: str,
-                   output_filename: OutputFile) -> None:
+                  output_filename: OutputFile) -> None:
     """
     Build a figure containing multiple boxplots. Each boxplot corresponds to an entry in the
     specified `data` dict, meaning each value and key specify a boxplot and corresponding label.
@@ -21,7 +22,7 @@ def plot_boxplots(data: Dict[str, List[Any]], title: str, xlabel: str, ylabel: s
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
 
-    # plt.show()
+    plt.show()
     if output_filename is not None:
         plt.savefig(output_filename)
 
@@ -37,4 +38,15 @@ def plot_code_coverage_boxplots(coverage: Dict[str, List[Any]], output_filename:
     ```
     """
     plot_boxplots(coverage, 'Code Coverage', 'Languages',
-                   'Distribution', output_filename)
+                  'Distribution', output_filename)
+
+
+def plot_value_counts_histogram(value_counts: pd.Series, output_filename: OutputFile) -> None:
+    """
+    Build a histogram to visualize a pandas value_counts() series.
+    """
+    value_counts.plot(kind='bar')
+
+    plt.show()
+    if output_filename is not None:
+        plt.savefig(output_filename)
