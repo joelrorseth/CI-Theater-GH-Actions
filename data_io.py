@@ -54,3 +54,10 @@ def write_series_to_json_file(series: pd.Series, output_filename: OutputFile = N
                               write_index_col: Optional[bool] = True) -> None:
     if output_filename is not None:
         series.to_json(output_filename, index=write_index_col)
+
+
+def read_series_from_json_file(json_file_path: str) -> pd.Series:
+    return pd.read_json(
+        json_file_path,
+        typ='series'
+    )
