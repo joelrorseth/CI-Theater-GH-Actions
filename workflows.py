@@ -35,14 +35,17 @@ from data_io import (
 
 WorkflowFilenameDict = Dict[str, List[Dict[str, str]]]
 WorkflowInfoDict = Dict[str, Dict[str, Dict[str, str]]]
+AnyWorkflowDict = Union[WorkflowFilenameDict, WorkflowInfoDict]
 
 
-def load_workflows(input_project_workflows_path: str) -> Dict:
+def load_workflows(input_project_workflows_path: str) -> AnyWorkflowDict:
     """
     Read project workflow information from a JSON file into a dict. The exact format of the dict
     may vary (ie. stage 3 retrieves workflow filenames, stage 4 retrieves YAML content).
     """
-    return read_dict_from_json_file(input_project_workflows_path)
+    print(f"Loading workflows from {input_project_workflows_path}...")
+    workflows_dict = read_dict_from_json_file(input_project_workflows_path)
+    print(f"Loaded workflows for {len(workflows_dict.keys())} projects")
 
 
 def save_workflows(project_workflows_dict: Dict, output_workflows_path: str) -> None:
@@ -51,6 +54,8 @@ def save_workflows(project_workflows_dict: Dict, output_workflows_path: str) -> 
     dictionary may vary (ie. stage 3 retrieves workflow filenames, stage 4 retrieves YAML content).
     """
     write_dict_to_json_file(project_workflows_dict, output_workflows_path)
+    print(
+        f"Wrote workflows for {len(project_workflows_dict.keys())} projects to {output_workflows_path}")
 
 
 def check_workflow_jobs_for_cmd(workflow: Union[Dict[str, Any], List[Any]]) -> bool:
