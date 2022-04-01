@@ -196,6 +196,7 @@ def get_coveralls_info(projects_path: str, workflows_path: str, default_branches
     print('[!] Done retrieving Coveralls code coverage info')
 
 
+"""
 if __name__ == "__main__":
     projects_final_path = 'data/projects_final.csv'
     ci_workflows_final_path = 'data/ci_workflows_final.json'
@@ -216,3 +217,4 @@ if __name__ == "__main__":
     # Get Coveralls info
     get_coveralls_info(projects_final_path, ci_workflows_final_path,
                        default_branches_path, project_coverage_path)
+"""

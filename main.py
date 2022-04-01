@@ -1,4 +1,5 @@
 import math
+from augment import get_default_branches_for_projects
 from filter_projects import (
     filter_by_using_ci,
     filter_by_workflow_files,
@@ -30,8 +31,10 @@ PROJECTS_STAGE_1_PATH = f"{DATA_FOLDER}/projects_stage_1.csv"
 PROJECTS_STAGE_2_PATH = f"{DATA_FOLDER}/projects_stage_2.csv"
 PROJECTS_STAGE_3_PATH = f"{DATA_FOLDER}/projects_stage_3.csv"
 PROJECTS_STAGE_4_PATH = f"{DATA_FOLDER}/projects_stage_4.csv"
+FINAL_PROJECTS_PATH = PROJECTS_STAGE_4_PATH
 WORKFLOWS_STAGE_3_PREFIX = f"{DATA_FOLDER}/workflows_stage_3"
 WORKFLOW_YAML_STAGE_4_PREFIX = f"{DATA_FOLDER}/workflow_yaml_stage_3"
+DEFAULT_BRANCHES_PREFIX = f"{DATA_FOLDER}/default_branches"
 WORKFLOWS_STAGE_3_PATH = f"{WORKFLOWS_STAGE_3_PREFIX}.json"
 WORKFLOWS_STAGE_4_PATH = f"{DATA_FOLDER}/workflows_stage_4.json"
 
@@ -52,5 +55,9 @@ if __name__ == '__main__':
     filter_by_using_ci(PROJECTS_STAGE_3_PATH, PROJECTS_STAGE_4_PATH,
                        WORKFLOWS_STAGE_3_PATH, WORKFLOWS_STAGE_4_PATH,
                        WORKFLOW_YAML_STAGE_4_PREFIX)
+
+    print('[!] Beginning augmentation phase')
+    get_default_branches_for_projects(
+        FINAL_PROJECTS_PATH, DEFAULT_BRANCHES_PREFIX)
 
     print('Done')

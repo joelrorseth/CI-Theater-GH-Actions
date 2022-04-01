@@ -386,16 +386,16 @@ def combine_partitioned_workflow_files(query_response_filenames: List[str],
 
 
 def get_default_branch_for_repos(projects: List[Dict[str, str]],
-                                 output_filename: OutputFile = None) -> Dict[str, str]:
+                                 output_filename: OutputFile = None) -> Dict:
     """
-    Get the default branch name for all projects / repos in a given list. Returns a dict mapping
-    repo ID str to default branch name.
+    Get the default branch name for all projects / repos in a given list. Returns the result
+    of the query in its original unparsed format.
     """
     queries = [build_graphql_query_default_branch(
         p['id'], p['owner'], p['name']) for p in projects]
     query = ' '.join(queries)
     query = f"{{ {query} }}"
-    return parse_graphql_query_default_branch(run_graphql_query(query, output_filename))
+    return run_graphql_query(query, output_filename)
 
 
 def get_default_branch_for_repos_partitioned(partitioned_projects: List[List[Dict[str, str]]],
@@ -407,14 +407,21 @@ def get_default_branch_for_repos_partitioned(partitioned_projects: List[List[Dic
     """
     branch_names = {}
     for i, projects_partition in enumerate(partitioned_projects):
-        # Get branch names for projects in this partition
-        partition_output_filename = f"{partition_output_prefix}_split{i}.json"
         print(
             f"Getting default branch names for projects in partition {i+1}/{num_partitions}...")
-        new_branch_names = get_default_branch_for_repos(
-            projects_partition, partition_output_filename)
+
+        # Get branch names for projects in this partition, if not already retrieved
+        partition_output_filename = f"{partition_output_prefix}_split{i}.json"
+        if not os.path.isfile(partition_output_filename):
+            new_branch_names_res = get_default_branch_for_repos(
+                projects_partition, partition_output_filename)
+        else:
+            new_branch_names_res = read_dict_from_json_file(
+                partition_output_filename)
 
         # Combine all results with those from this partition
+        new_branch_names = parse_graphql_query_default_branch(
+            new_branch_names_res)
         for repo_id_str, def_branch_name in new_branch_names.items():
             if repo_id_str in branch_names:
                 print(build_dup_branch_name_warning(repo_id_str))
