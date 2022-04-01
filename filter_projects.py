@@ -22,8 +22,7 @@ from projects import (
     GHTORRENT_PATH,
     NULL_SYMBOL,
     PROJECT_COLS,
-    PROJECT_MEMBERS_COLS,
-    PROJECT_MEMBERS_PATH,
+    load_project_members,
     load_projects_partitioned
 )
 from workflows import get_workflows_using_ci
@@ -37,13 +36,7 @@ def filter_by_member_count(output_projects_path: str):
     print("[!] Filtering out projects with < 5 members")
 
     # Load project_members table
-    print('Loading project-member associations...')
-    project_members_df = pd.read_csv(
-        PROJECT_MEMBERS_PATH,
-        index_col=False,
-        names=PROJECT_MEMBERS_COLS
-    )
-    print(f"Loaded {project_members_df.shape[0]} project-member associations")
+    project_members_df = load_project_members()
 
     # Remove any potential duplicate memberships
     project_members_df.drop_duplicates(

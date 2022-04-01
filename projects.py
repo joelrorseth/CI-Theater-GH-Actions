@@ -53,6 +53,21 @@ def decode_repo_and_workflow_key(graphql_key: str) -> Tuple[str, int]:
     return str(repo_id), int(workflow_idx)
 
 
+def load_project_members() -> pd.DataFrame:
+    """
+    Read GHTorrent GitHub project member associations into a `pd.DataFrame`. Note that all
+    original columns are maintained ('repo_id', 'user_id', and 'created_at').
+    """
+    print('Loading project-member associations...')
+    df = pd.read_csv(
+        PROJECT_MEMBERS_PATH,
+        index_col=False,
+        names=PROJECT_MEMBERS_COLS
+    )
+    print(f"Loaded {df.shape[0]} project-member associations")
+    return df
+
+
 def load_projects(input_projects_path: str,
                   should_encode_repo_key: bool = True) -> List[Dict[str, str]]:
     """
