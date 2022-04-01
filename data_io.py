@@ -34,7 +34,7 @@ def read_dict_from_yaml_str(yaml_str: str) -> Optional[Dict[str, Any]]:
         print("ERROR: YAML parsing raised ParserError.")
 
 
-def write_df_to_csv_file(df, output_filename: OutputFile = None,
+def write_df_to_csv_file(df: pd.DataFrame, output_filename: OutputFile = None,
                          header: Optional[bool] = False,
                          write_index_col: Optional[bool] = False) -> None:
     if output_filename is not None:
@@ -48,3 +48,9 @@ def read_df_from_csv_file(csv_file_path: str, column_names: Optional[List[str]] 
         index_col=expect_index_col,
         names=column_names
     )
+
+
+def write_series_to_json_file(series: pd.Series, output_filename: OutputFile = None,
+                              write_index_col: Optional[bool] = False) -> None:
+    if output_filename is not None:
+        series.to_json(output_filename, index=write_index_col)
