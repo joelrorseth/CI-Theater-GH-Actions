@@ -23,22 +23,23 @@ MAX_GITHUB_RESULTS_PER_PAGE = 100
 NUM_PAGES = NUM_WORKFLOW_RUNS / MAX_GITHUB_RESULTS_PER_PAGE
 
 
-def encode_workflow_runs_filename(repo_id: str, workflow_idx_str: str) -> str:
+def encode_workflow_runs_path(workflow_runs_prefix: str, repo_id: str,
+                              workflow_idx_str: str) -> str:
     """
     Encode a filename for a JSON file containing all workflow runs for a given project / workflow.
     Produces a filename of the form `workflow_runs_repo123workflow456.json`, which indicates that
     the file contains workflow runs for workflow 456 in repo 123.
     """
-    return f"workflow_runs_{encode_repo_and_workflow_key(repo_id, workflow_idx_str)}.json"
+    return f"{workflow_runs_prefix}_{encode_repo_and_workflow_key(repo_id, workflow_idx_str)}.json"
 
 
-def encode_coveralls_report_filename(repo_id: str) -> str:
+def encode_coveralls_report_path(project_coverage_prefix: str, repo_id: str) -> str:
     """
-    Encode a filename for the Coveralls report corresponding to a given project. Produces a
+    Encode a path for the Coveralls report corresponding to a given project. Produces a
     filename of the form `coveralls_report_repo123.json`, which indicates that the file contains
     the Coveralls report for repo 123.
     """
-    return f"coveralls_report_repo{repo_id}.json"
+    return f"{project_coverage_prefix}_repo{repo_id}.json"
 
 
 def verify_projects_have_augmented_data(projects: List[Dict[str, str]],
@@ -82,16 +83,24 @@ def load_projects_workflows_branches(projects_path: str, workflows_path: str, de
 
 def get_default_branches_for_projects(projects_path: str, default_branches_path_prefix: str) -> None:
     print(f"[!] Retrieving the default branch name for each project")
+
+    default_branches_output_path = f"{default_branches_path_prefix}.json"
+    if os.path.isfile(default_branches_output_path):
+        print(
+            f"[!] {default_branches_output_path} already exists, skipping...")
+        return
+
     partitioned_projects = load_projects_and_partition(
         projects_path, NUM_PARTITIONS_DEFAULT_BRANCH)
     get_default_branch_for_repos_partitioned(
         partitioned_projects, NUM_PARTITIONS_DEFAULT_BRANCH, default_branches_path_prefix)
     print(
-        f"[!] Wrote default branch names file to {default_branches_path_prefix}.json")
+        f"[!] Wrote default branch names file to {default_branches_output_path}")
     print(f"[!] Done retrieving default branch names")
 
 
-def get_workflow_runs(projects_path: str, workflows_path: str, default_branches_path: str) -> None:
+def get_workflow_runs(projects_path: str, workflows_path: str, default_branches_path: str,
+                      workflow_runs_prefix: str) -> None:
     print(
         f"[!] Retrieving the {NUM_WORKFLOW_RUNS} most recent runs for each project workflow")
 
@@ -104,22 +113,24 @@ def get_workflow_runs(projects_path: str, workflows_path: str, default_branches_
         print(f"Getting workflow runs for project {i+1}/{len(projects)}")
         for workflow_idx_str, workflow in workflows_dict[project['id']].items():
             # Get workflow runs for this workflow if we haven't already
-            output_filename = f"data/{encode_workflow_runs_filename(project['id'], workflow_idx_str)}"
-            if not os.path.isfile(output_filename):
+            runs_output_path = encode_workflow_runs_path(
+                workflow_runs_prefix, project['id'], workflow_idx_str)
+            if not os.path.isfile(runs_output_path):
                 get_runs_for_workflow(
                     project['owner'],
                     project['name'],
                     default_branches_dict[project['id']],
                     workflow['name'],
-                    output_filename,
+                    runs_output_path,
                     NUM_PAGES,
                     MAX_GITHUB_RESULTS_PER_PAGE
                 )
 
-    print('[!] Done retrieving workflow runs')
+    print('[!] Done retrieving workflow runs (no summarized file was written)')
 
 
 def get_coveralls_info(projects_path: str, workflows_path: str, default_branches_path: str,
+                       workflow_runs_prefix: str, project_coverage_prefix: str,
                        project_coverage_path: str) -> None:
     print('[!] Retrieving Coveralls code coverage info for each project')
     reports_found, reports_found_by_lang = 0, {}
@@ -135,13 +146,14 @@ def get_coveralls_info(projects_path: str, workflows_path: str, default_branches
         # Get SHAs (identifiers) for the head commits of every workflow run
         proj_commits = {}
         for workflow_idx_str, _ in workflows_dict[project['id']].items():
-            workflow_runs_filename = f"data/{encode_workflow_runs_filename(project['id'], workflow_idx_str)}"
-            if not os.path.isfile(workflow_runs_filename):
+            workflow_runs_path = encode_workflow_runs_path(
+                workflow_runs_prefix, project['id'], workflow_idx_str)
+            if not os.path.isfile(workflow_runs_path):
                 print(
-                    f"ERROR: Workflow runs file does not exist at {workflow_runs_filename}, aborting!")
+                    f"ERROR: Workflow runs file does not exist at {workflow_runs_path}, aborting!")
                 exit()
 
-            workflow_runs = read_dict_from_json_file(workflow_runs_filename)
+            workflow_runs = read_dict_from_json_file(workflow_runs_path)
             for run in workflow_runs:
                 proj_commits[run['created_at']] = run['head_sha']
 
@@ -152,7 +164,8 @@ def get_coveralls_info(projects_path: str, workflows_path: str, default_branches
             reverse=True
         )
 
-        coveralls_report_filename = f"data/{encode_coveralls_report_filename(project['id'])}"
+        coveralls_report_filename = encode_coveralls_report_path(
+            project_coverage_prefix, project['id'])
         report = {}
 
         if len(ordered_proj_commits) == 0:
