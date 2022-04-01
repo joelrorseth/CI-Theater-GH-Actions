@@ -208,9 +208,9 @@ def filter_by_workflow_files(input_projects_path: str, output_projects_path: str
     print("[!] Done filtering out projects that don't have any GitHub Actions workflow files")
 
 
-def filter_by_ci_workflow_files(input_projects_path: str, output_projects_path: str,
-                                input_workflow_filenames_path: str, output_workflows_path: str,
-                                yaml_workflows_json_prefix: str):
+def filter_by_using_ci(input_projects_path: str, output_projects_path: str,
+                       input_workflow_filenames_path: str, output_workflows_path: str,
+                       yaml_workflows_json_prefix: str):
     print("[!] Filtering out projects lacking any workflow file that use GitHub Actions for CI")
 
     if os.path.isfile(output_projects_path) and os.path.isfile(output_workflows_path):
