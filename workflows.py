@@ -46,6 +46,7 @@ def load_workflows(input_project_workflows_path: str) -> AnyWorkflowDict:
     print(f"Loading workflows from {input_project_workflows_path}...")
     workflows_dict = read_dict_from_json_file(input_project_workflows_path)
     print(f"Loaded workflows for {len(workflows_dict.keys())} projects")
+    return workflows_dict
 
 
 def save_workflows(project_workflows_dict: Dict, output_workflows_path: str) -> None:
