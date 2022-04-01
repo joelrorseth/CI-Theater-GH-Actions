@@ -10,8 +10,8 @@ MEMBER_COUNT_BINS = [
 ]
 SUPPORTED_LANGUAGES = [
     'Java',
-    'Javascript',
-    'Typescript',
+    'JavaScript',
+    'TypeScript',
     'Ruby',
     'C',
     'C++',

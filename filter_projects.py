@@ -116,7 +116,7 @@ def filter_projects_by_lang(supported_languages: List[str], input_projects_path:
     num_projects_before = projects_df.shape[0]
 
     # Keep only those projects whose language is in the set of allowed languages
-    print(set(projects_df['language']))
+    # print(set(projects_df['language']))
     projects_df = projects_df[projects_df.language.isin(supported_languages)]
 
     print(
