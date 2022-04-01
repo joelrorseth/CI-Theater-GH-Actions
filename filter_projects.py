@@ -25,7 +25,7 @@ from projects import (
     PROJECT_COLS,
     load_full_projects,
     load_project_members,
-    load_projects_partitioned,
+    load_projects_and_partition,
     save_full_projects_df
 )
 from workflows import get_workflows_using_ci
@@ -176,7 +176,7 @@ def filter_by_workflow_files(input_projects_path: str, output_projects_path: str
         return
 
     # Partition the projects, then query for workflows contained in the projects of each partition
-    repos_partitions = load_projects_partitioned(
+    repos_partitions = load_projects_and_partition(
         input_projects_path, NUM_WORKFLOW_PARTITIONS)
 
     # Get workflows for projects in each partition, if not already cached

@@ -11,7 +11,7 @@ from typing import Any, Dict, List
 from coveralls_api_client import get_latest_coveralls_report_in_date_range
 from data_io import read_dict_from_json_file, write_dict_to_json_file
 from github_api_client import GITHUB_DATE_FORMAT, get_default_branch_for_repos_partitioned, get_runs_for_workflow
-from projects import encode_repo_and_workflow_key, load_projects, load_projects_partitioned
+from projects import encode_repo_and_workflow_key, load_projects, load_projects_and_partition
 
 # Number of workflow runs to fetch (ie. build history window)
 NUM_PARTITIONS_DEFAULT_BRANCH = 60
@@ -82,7 +82,7 @@ def load_projects_workflows_branches(projects_path: str, workflows_path: str, de
 
 def get_default_branches_for_projects(projects_path: str, default_branches_path_prefix: str) -> None:
     print(f"[!] Retrieving the default branch name for each project")
-    partitioned_projects = load_projects_partitioned(
+    partitioned_projects = load_projects_and_partition(
         projects_path, NUM_PARTITIONS_DEFAULT_BRANCH)
     get_default_branch_for_repos_partitioned(
         partitioned_projects, NUM_PARTITIONS_DEFAULT_BRANCH, default_branches_path_prefix)

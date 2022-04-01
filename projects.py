@@ -121,7 +121,7 @@ def load_projects(input_projects_path: str,
     ]
 
 
-def load_projects_partitioned(input_projects_path: str, num_partitions: int,
+def load_projects_and_partition(input_projects_path: str, num_partitions: int,
                               should_encode_repo_key: bool = True) -> List[List[Dict[str, str]]]:
     """
     Read GitHub projects from the specified CSV file (ie. in GHTorrent format) into a list of
