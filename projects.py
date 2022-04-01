@@ -2,6 +2,7 @@ import os
 import pandas as pd
 import numpy as np
 from typing import Dict, List, Tuple
+from data_io import read_df_from_csv_file, write_df_to_csv_file
 
 GHTORRENT_PATH = os.environ['ghtorrent_path']
 PROJECT_MEMBERS_PATH = f"{GHTORRENT_PATH}project_members.csv"
@@ -59,11 +60,8 @@ def load_project_members() -> pd.DataFrame:
     original columns are maintained ('repo_id', 'user_id', and 'created_at').
     """
     print('Loading project-member associations...')
-    project_members_df = pd.read_csv(
-        PROJECT_MEMBERS_PATH,
-        index_col=False,
-        names=PROJECT_MEMBERS_COLS
-    )
+    project_members_df = read_df_from_csv_file(
+        PROJECT_MEMBERS_PATH, PROJECT_MEMBERS_COLS)
 
     # Remove any potential duplicate memberships
     project_members_df.drop_duplicates(
@@ -74,6 +72,24 @@ def load_project_members() -> pd.DataFrame:
     print(
         f"Loaded {num_associations} unique member associations to {num_projects} projects")
     return project_members_df
+
+
+def load_full_projects(input_projects_path: str, quiet: bool = False) -> pd.DataFrame:
+    """
+    Read GitHub projects from the specified CSV file (ie. in GHTorrent format) into a
+    pd.DataFrame, without modifying the data in any way.
+    """
+    if not quiet:
+        print("Loading projects...")
+    projects_df = read_df_from_csv_file(input_projects_path, PROJECT_COLS)
+    if not quiet:
+        print(f"Loaded {projects_df.shape[0]} projects")
+    return projects_df
+
+
+def save_full_projects_df(projects_df: pd.DataFrame, output_projects_path: str) -> None:
+    """Write a pd.DataFrame containing full projects to CSV file."""
+    write_df_to_csv_file(projects_df, output_projects_path)
 
 
 def load_projects(input_projects_path: str,
@@ -93,16 +109,7 @@ def load_projects(input_projects_path: str,
     ]
     ```
     """
-    # Load projects from JSON
-    print("Loading projects...")
-    projects_df = pd.read_csv(
-        input_projects_path,
-        index_col=False,
-        names=PROJECT_COLS
-    )
-    print(f"Loaded {projects_df.shape[0]} projects")
-
-    # Keep pertinent columns only
+    projects_df = load_full_projects(input_projects_path)
     return [
         {
             'id': encode_repo_key(r['repo_id']) if should_encode_repo_key else str(r['repo_id']),
