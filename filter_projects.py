@@ -31,7 +31,7 @@ from projects import (
 from workflows import get_workflows_using_ci
 
 NUM_MEMBER_PARTITIONS = 10
-NUM_WORKFLOW_PARTITIONS = 1000
+NUM_WORKFLOW_PARTITIONS = 2000
 NUM_YAML_PARTITIONS = 60
 
 
@@ -127,6 +127,7 @@ def filter_projects_by_lang(supported_languages: List[str], input_projects_path:
     print("[!] Done filtering out projects that use an unsupported language")
 
 
+# TODO: Refactor / delete
 def filter_by_member_count(output_projects_path: str):
     print("[!] Filtering out projects with < 5 members")
 
@@ -164,25 +165,39 @@ def filter_by_member_count(output_projects_path: str):
     print(f"[!] # remaining projects: ${projects_df.shape[0]}")
 
 
-def filter_by_workflow_files(input_projects_path: str, output_projects_path: str, output_workflows_path: str):
+def filter_by_workflow_files(input_projects_path: str, output_projects_path: str,
+                             output_workflows_prefix: str):
     print("[!] Filtering out projects that don't have any GitHub Actions workflow files")
+
+    output_workflows_path = f"{output_workflows_prefix}.json"
+    if os.path.isfile(output_projects_path) and os.path.isfile(output_workflows_path):
+        print(
+            f"[!] {output_projects_path} and {output_workflows_path} already exist, skipping...")
+        return
 
     # Partition the projects, then query for workflows contained in the projects of each partition
     repos_partitions = load_projects_partitioned(
-        input_projects_path, PROJECT_COLS, NUM_WORKFLOW_PARTITIONS)
+        input_projects_path, NUM_WORKFLOW_PARTITIONS)
 
+    # Get workflows for projects in each partition, if not already cached
     for i in range(0, len(repos_partitions)):
-        repos_partition = repos_partitions[i]
-        actions_output_path = f"data/actions_projects_gte5_members_split{i}.json"
         print(
             f"Querying GitHub Actions usage for projects (partition {i+1}/{NUM_WORKFLOW_PARTITIONS})...")
-        get_workflows_for_repos(repos_partition.tolist(), actions_output_path)
+        actions_output_path = f"{output_workflows_prefix}_split{i}.json"
+        if not os.path.isfile(actions_output_path):
+            repos_partition = repos_partitions[i]
+            get_workflows_for_repos(
+                repos_partition.tolist(), actions_output_path)
 
-    # Parse response to determine which projects have at least 1 workflow
+    # Parse and combine responses
     query_responses = [
-        f"data/actions_projects_gte5_members_split{i}.json" for i in range(NUM_WORKFLOW_PARTITIONS)]
+        f"{output_workflows_prefix}_split{i}.json" for i in range(NUM_WORKFLOW_PARTITIONS)]
     project_workflows_dict = combine_partitioned_workflow_filenames(
         query_responses)
+
+    # Load full version of unpartitioned input projects
+    projects_df = load_full_projects(input_projects_path, quiet=True)
+    num_projects_before = projects_df.shape[0]
 
     # Extract repo_ids for projects that contained at least 1 workflow
     remaining_repo_ids = [int(repo_id)
@@ -190,15 +205,16 @@ def filter_by_workflow_files(input_projects_path: str, output_projects_path: str
     projects_df = projects_df[projects_df.repo_id.isin(remaining_repo_ids)]
     print(
         f"There are {len(remaining_repo_ids)} projects containing GitHub Actions workflow(s)")
+    print(
+        f"{num_projects_before} projects were reduced to {projects_df.shape[0]}")
 
     # Write the remaining projects and their found workflows to output files
-    write_df_to_csv_file(projects_df, output_projects_path)
+    save_full_projects_df(projects_df, output_projects_path)
     write_dict_to_json_file(project_workflows_dict, output_workflows_path)
 
     print(f"[!] Wrote filtered projects file to {output_projects_path}")
     print(f"[!] Wrote workflow filenames file to {output_workflows_path}")
     print("[!] Done filtering out projects that don't have any GitHub Actions workflow files")
-    print(f"[!] # remaining projects: {projects_df.shape[0]}")
 
 
 def filter_by_ci_workflow_files(input_projects_path: str, output_projects_path: str,
