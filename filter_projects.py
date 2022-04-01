@@ -48,8 +48,9 @@ def get_initial_projects(output_projects_path: str):
     repos_gte2 = repos_gte2.index.values
     project_members_df = project_members_df[project_members_df.repo_id.isin(
         repos_gte2)]
+    num_removed = len(repo_member_counts) - len(repos_gte2)
     print(
-        f"Filtering {len(repos_gte2)}/{len(repo_member_counts)} projects with < 2 members...")
+        f"Removed {num_removed}/{len(repo_member_counts)} projects that have < 2 members")
 
     filtered_projects_df = None
     ghtorrent_projects_count = 0
