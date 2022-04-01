@@ -45,7 +45,7 @@ def plot_value_counts_histogram(value_counts: pd.Series, output_filename: Output
     """
     Build a histogram to visualize a pandas value_counts() series.
     """
-    value_counts.hist()
+    value_counts.hist(bins=50)
 
     plt.show()
     if output_filename is not None:

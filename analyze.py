@@ -61,11 +61,12 @@ if __name__ == '__main__':
     project_membership_count_dist_img_path = 'figures/project_membership_count_dist.png'
     coverage_boxplot_img_path = 'figures/coverage_boxplot.png'
 
-    """
     # Produce a histogram illustrating the distribution of project member counts
     analyze_project_member_count(
         project_membership_count_dist_img_path, project_membership_count_dist_path)
+    
     """
-
     # Produce a boxplot illustrating project test coverage by language
     analyze_coverage(project_coverage_path, coverage_boxplot_img_path)
+    """
+
