@@ -1,4 +1,4 @@
-from analyze import analyze_coverage, analyze_project_member_count
+from analyze import analyze_commit_frequency, analyze_coverage, analyze_project_member_count
 from augment import get_coveralls_info, get_default_branches_for_projects, get_workflow_runs
 from config import DATA_FOLDER, RESULTS_FOLDER, SUPPORTED_LANGUAGES
 from filter_projects import (
@@ -80,5 +80,6 @@ if __name__ == '__main__':
         FINAL_PROJECTS_MEMBER_DIST_JSON_PATH
     )
     analyze_coverage(LANGUAGE_COVERAGE_PATH, PROJECT_COVERAGE_BY_LANG_IMG_PATH)
-
+    analyze_commit_frequency(PROJECTS_STAGE_6_PATH,
+                             WORKFLOWS_STAGE_6_PATH, WORKFLOW_RUNS_PREFIX)
     print('Done')
