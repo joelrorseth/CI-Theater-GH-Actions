@@ -12,11 +12,11 @@ MAX_GITHUB_RESULTS_PER_PAGE = 100
 NUM_PAGES = NUM_WORKFLOW_RUNS / MAX_GITHUB_RESULTS_PER_PAGE
 
 MEMBER_COUNT_BINS = [
-    [2, 4],
-    [5, 8],
-    [9, 15],
-    [16, 24],
-    [25, math.inf]
+    [2, 2],
+    [3, 4],
+    [5, 9],
+    [10, 19],
+    [20, math.inf]
 ]
 SUPPORTED_LANGUAGES = [
     'Java',

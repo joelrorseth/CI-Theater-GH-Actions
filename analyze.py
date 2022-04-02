@@ -1,3 +1,5 @@
+from collections import defaultdict
+from datetime import datetime, timedelta
 from coverage import load_coverage
 from data_io import write_series_to_json_file
 from github_api_client import convert_str_to_datetime
@@ -46,28 +48,70 @@ def analyze_commit_frequency(projects_path: str, workflows_path: str,
 
     projects = load_projects(projects_path, False)
     workflows_dict = load_workflows(workflows_path)
-    num_proj_multiple_workflows = 0
+
+    avg_daily_commits_by_proj = {}
+    valid_repo_id_strs = []
 
     # Iterate through each workflow for each project
-    for i, project in enumerate(projects):
+    for project in projects:
         repo_id_str = project['id']
-        project_workflows = workflows_dict[project['id']]
+        project_commits = {}
 
-        if len(project_workflows) > 1:
-            num_proj_multiple_workflows += 1
-        if len(project_workflows) == 0:
-            print(f"ERROR: There are no workflows for project {repo_id_str}")
+        for workflow_idx_str, _ in workflows_dict[repo_id_str].items():
+            # Get workflow runs
+            workflow_runs_path = encode_workflow_runs_path(
+                workflow_runs_prefix, repo_id_str, workflow_idx_str)
+            workflow_runs = load_workflow_runs(workflow_runs_path)
 
-        # TODO
-        # for workflow_idx_str, _ in workflows_dict[project['id']].items():
-        #     # Get workflow runs
-        #     workflow_runs_path = encode_workflow_runs_path(
-        #         workflow_runs_prefix, repo_id_str, workflow_idx_str)
-        #     workflow_runs = load_workflow_runs(workflow_runs_path)
-        #     [convert_str_to_datetime(r['created_at']) for r in workflow_runs]
+            # Across all project workflows, map commit id to commit timestamp
+            for run in workflow_runs:
+                project_commits[run['head_commit']
+                                ['timestamp']] = run['head_commit']['id']
 
+        # Get min / max datetime observed across all commits
+        commit_datetimes = [convert_str_to_datetime(
+            t) for t in project_commits.keys()]
+        min_date, max_date = min(commit_datetimes), max(commit_datetimes)
+
+        # We could be missing commits from the oldest / newest observed date, trim these
+        max_valid_date = (max_date - timedelta(days=1)).replace(
+            hour=23, minute=59, second=59, microsecond=999999)
+        min_valid_date = (min_date + timedelta(days=1)).replace(
+            hour=0, minute=0, second=0, microsecond=0)
+
+        # As long as 1 full days worth of commits were observed, compute daily averages
+        num_proj_commits_by_valid_date = defaultdict(int)
+        if (max_valid_date - min_valid_date + timedelta(seconds=1)).days >= 1:
+            valid_repo_id_strs.append(repo_id_str)
+            for commit_datetime in commit_datetimes:
+                if commit_datetime >= min_valid_date and commit_datetime <= max_valid_date:
+                    commit_date = str(commit_datetime.date())
+                    num_proj_commits_by_valid_date[commit_date] += 1
+
+        # Calculate project average daily commit rate (some days may be ignored)
+        avg_daily_commits_by_proj[repo_id_str] = sum(
+            num_proj_commits_by_valid_date.values()) / len(num_proj_commits_by_valid_date)
+
+    num_valid_proj = len(valid_repo_id_strs)
     print(
-        f"There are {num_proj_multiple_workflows} projects with multiple workflows")
+        f"Only {num_valid_proj}/{len(projects)} projects have >= 1 full day of commit history")
+
+    # Calculate average daily commit rate across all projects (some projects may be ignored)
+    average_daily_commit_rate = sum(
+        avg_daily_commits_by_proj.values()) / len(avg_daily_commits_by_proj)
+
+    # Sort out frequent vs. infrequent projects by comparing against average daily commit rate
+    valid_project_is_frequent = {
+        repo_id: avg_daily_commits_by_proj[repo_id] >= average_daily_commit_rate
+        for repo_id in valid_repo_id_strs
+    }
+    num_frequent = len([f for f in valid_project_is_frequent.values() if f])
+    num_infrequent = len(
+        [f for f in valid_project_is_frequent.values() if not f])
+    print(f"{num_frequent}/{num_valid_proj} ({num_frequent/num_valid_proj}%) projects commit frequently")
+    print(f"{num_infrequent}/{num_valid_proj} ({num_infrequent/num_valid_proj}%) projects commit infrequently")
+
+    # TODO: Plot # commits vs project size, for each language
     print("[!] Done analyzing project commit frequency")
 
 
