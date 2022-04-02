@@ -11,8 +11,8 @@ from typing import Any, Dict, List
 from branches import load_default_branches
 from coveralls_api_client import get_latest_coveralls_report_in_date_range
 from data_io import read_dict_from_json_file, write_dict_to_json_file
-from projects import encode_repo_and_workflow_key, load_projects, load_projects_and_partition
-from workflows import load_workflows
+from projects import load_projects, load_projects_and_partition
+from workflows import encode_workflow_runs_path, load_workflows
 from config import (
     MAX_GITHUB_RESULTS_PER_PAGE,
     NUM_PAGES,
@@ -24,16 +24,6 @@ from github_api_client import (
     get_default_branch_for_repos_partitioned,
     get_runs_for_workflow
 )
-
-
-def encode_workflow_runs_path(workflow_runs_prefix: str, repo_id: str,
-                              workflow_idx_str: str) -> str:
-    """
-    Encode a filename for a JSON file containing all workflow runs for a given project / workflow.
-    Produces a filename of the form `workflow_runs_repo123workflow456.json`, which indicates that
-    the file contains workflow runs for workflow 456 in repo 123.
-    """
-    return f"{workflow_runs_prefix}_{encode_repo_and_workflow_key(repo_id, workflow_idx_str)}.json"
 
 
 def encode_coveralls_report_path(project_coverage_prefix: str, repo_id: str) -> str:
@@ -144,7 +134,7 @@ def get_coveralls_info(projects_path: str, workflows_path: str, default_branches
     # Get Coveralls report for each project
     for i, project in enumerate(projects):
         print(
-            f"Getting Coveralls report for project {i+1}/{len(projects)} (num found = {reports_found})")
+            f"Getting Coveralls report for project {i+1}/{len(projects)} (# found = {reports_found})")
 
         # Get SHAs (identifiers) for the head commits of every workflow run
         proj_commits = {}

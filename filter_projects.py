@@ -9,7 +9,7 @@ import os
 from typing import List
 import pandas as pd
 from branches import load_default_branches
-from config import NUM_MEMBER_PARTITIONS, NUM_WORKFLOW_PARTITIONS, NUM_YAML_PARTITIONS
+from config import NUM_MEMBER_PARTITIONS, NUM_REQUIRED_WORKFLOW_RUNS, NUM_WORKFLOW_PARTITIONS, NUM_YAML_PARTITIONS
 from github_api_client import (
     combine_partitioned_workflow_filenames,
     get_workflow_files_partitioned,
@@ -20,10 +20,11 @@ from projects import (
     NULL_SYMBOL,
     load_full_projects,
     load_project_members,
+    load_projects,
     load_projects_and_partition,
     save_full_projects_df
 )
-from workflows import get_workflows_using_ci, load_workflows, save_workflows
+from workflows import encode_workflow_runs_path, get_workflows_using_ci, load_workflow_runs, load_workflows, save_workflows
 
 
 def get_initial_projects(output_projects_path: str):
@@ -228,3 +229,56 @@ def filter_by_default_branch_existence(input_projects_path: str, output_projects
     # Write the remaining projects and their found workflows to output files
     save_full_projects_df(projects_df, output_projects_path)
     print("[!] Done filtering out projects with missing default branch name")
+
+
+def filter_by_workflow_run_history(input_projects_path: str, output_projects_path: str,
+                                   input_workflows_path: str, output_workflows_path: str,
+                                   workflow_runs_prefix: str):
+    print(
+        f"[!] Filtering out projects with < {NUM_REQUIRED_WORKFLOW_RUNS} workflow runs")
+
+    if os.path.isfile(output_projects_path):
+        print(f"[!] {output_projects_path} already exists, skipping...")
+        return
+
+    projects = load_projects(input_projects_path)
+    workflows_dict = load_workflows(input_workflows_path)
+    repo_ids_to_keep = []
+
+    # Iterate through each workflow for each project
+    for i, project in enumerate(projects):
+        if i % 100 == 0:
+            print(
+                f"Filtering projects by # of workflow runs ({i}/{len(projects)})...")
+        workflow_ids_to_remove = []
+        for workflow_idx_str, _ in workflows_dict[project['id']].items():
+            workflow_runs_path = encode_workflow_runs_path(
+                workflow_runs_prefix, project['id'], workflow_idx_str)
+            workflow_runs = load_workflow_runs(workflow_runs_path)
+
+            # Mark workflow for removal if unsufficient workflow runs exist for it
+            if len(workflow_runs) < NUM_REQUIRED_WORKFLOW_RUNS:
+                workflow_ids_to_remove.append(workflow_idx_str)
+
+        # Remove workflows that were flagged
+        for workflow_id_to_remove in workflow_ids_to_remove:
+            workflows_dict[project['id']].pop(workflow_id_to_remove)
+
+        # If no workflows remain, remove the project from workflows dict
+        if not workflows_dict[project['id']]:
+            workflows_dict.pop(project['id'])
+        else:
+            repo_ids_to_keep.append(int(project['id']))
+
+    # Remove any projects that had 0 workflows left after filtering
+    projects_df = load_full_projects(input_projects_path, quiet=True)
+    num_projects_before = projects_df.shape[0]
+    projects_df = projects_df[projects_df.repo_id.isin(repo_ids_to_keep)]
+    print(
+        f"{num_projects_before} projects were reduced to {projects_df.shape[0]}")
+
+    # Write the remaining projects and workflows dict to JSON
+    # NOTE: Useless workflow runs are not removed from disk
+    save_full_projects_df(projects_df, output_projects_path)
+    save_workflows(workflows_dict, output_workflows_path)
+    print("[!] Done filtering out projects with too few workflow runs")

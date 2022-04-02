@@ -4,6 +4,7 @@ from filter_projects import (
     filter_by_default_branch_existence,
     filter_by_using_ci,
     filter_by_workflow_files,
+    filter_by_workflow_run_history,
     filter_forked_projects,
     filter_projects_by_lang,
     get_initial_projects
@@ -15,10 +16,12 @@ PROJECTS_STAGE_2_PATH = f"{DATA_FOLDER}/projects_stage_2.csv"
 PROJECTS_STAGE_3_PATH = f"{DATA_FOLDER}/projects_stage_3.csv"
 PROJECTS_STAGE_4_PATH = f"{DATA_FOLDER}/projects_stage_4.csv"
 PROJECTS_STAGE_5_PATH = f"{DATA_FOLDER}/projects_stage_5.csv"
+PROJECTS_STAGE_6_PATH = f"{DATA_FOLDER}/projects_stage_6.csv"
 WORKFLOWS_STAGE_3_PREFIX = f"{DATA_FOLDER}/workflows_stage_3"
 WORKFLOW_YAML_STAGE_4_PREFIX = f"{DATA_FOLDER}/workflow_yaml_stage_3"
 WORKFLOWS_STAGE_3_PATH = f"{WORKFLOWS_STAGE_3_PREFIX}.json"
 WORKFLOWS_STAGE_4_PATH = f"{DATA_FOLDER}/workflows_stage_4.json"
+WORKFLOWS_STAGE_6_PATH = f"{DATA_FOLDER}/workflows_stage_6.json"
 DEFAULT_BRANCHES_PREFIX = f"{DATA_FOLDER}/default_branches"
 DEFAULT_BRANCHES_PATH = f"{DEFAULT_BRANCHES_PREFIX}.json"
 WORKFLOW_RUNS_PREFIX = f"{DATA_FOLDER}/workflow_runs"
@@ -49,5 +52,8 @@ if __name__ == '__main__':
         PROJECTS_STAGE_4_PATH, PROJECTS_STAGE_5_PATH, DEFAULT_BRANCHES_PATH)
     get_workflow_runs(PROJECTS_STAGE_5_PATH, WORKFLOWS_STAGE_4_PATH,
                       DEFAULT_BRANCHES_PATH, WORKFLOW_RUNS_PREFIX)
+    filter_by_workflow_run_history(PROJECTS_STAGE_5_PATH, PROJECTS_STAGE_6_PATH,
+                                   WORKFLOWS_STAGE_4_PATH, WORKFLOWS_STAGE_6_PATH,
+                                   WORKFLOW_RUNS_PREFIX)
 
     print('Done')
