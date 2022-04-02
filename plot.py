@@ -26,6 +26,7 @@ def plot_boxplots(data: Dict[str, List[Any]], title: str, xlabel: str, ylabel: s
     # plt.show()
     if output_filename is not None:
         plt.savefig(output_filename)
+        plt.clf()
 
 
 def plot_code_coverage_boxplots(coverage: Dict[str, List[Any]], output_filename: OutputFile) -> None:
@@ -54,3 +55,4 @@ def plot_project_member_counts_histogram(value_counts: pd.Series, output_filenam
     # plt.show()
     if output_filename is not None:
         plt.savefig(output_filename)
+        plt.clf()
