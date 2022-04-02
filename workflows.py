@@ -38,6 +38,16 @@ WorkflowInfoDict = Dict[str, Dict[str, Dict[str, str]]]
 AnyWorkflowDict = Union[WorkflowFilenameDict, WorkflowInfoDict]
 
 
+def encode_workflow_runs_path(workflow_runs_prefix: str, repo_id: str,
+                              workflow_idx_str: str) -> str:
+    """
+    Encode a filename for a JSON file containing all workflow runs for a given project / workflow.
+    Produces a filename of the form `workflow_runs_repo123workflow456.json`, which indicates that
+    the file contains workflow runs for workflow 456 in repo 123.
+    """
+    return f"{workflow_runs_prefix}_repo{repo_id}workflow{workflow_idx_str}.json"
+
+
 def load_workflows(input_project_workflows_path: str) -> AnyWorkflowDict:
     """
     Read project workflow information from a JSON file into a dict. The exact format of the dict
@@ -57,6 +67,15 @@ def save_workflows(project_workflows_dict: Dict, output_workflows_path: str) -> 
     write_dict_to_json_file(project_workflows_dict, output_workflows_path)
     print(
         f"Wrote workflows for {len(project_workflows_dict.keys())} projects to {output_workflows_path}")
+
+
+def load_workflow_runs(workflow_runs_path: str) -> List[Dict[Any, Any]]:
+    """
+    Read workflow runs for a given project / workflow from a JSON file, and write the data into
+    a list of dictionaries.
+    """
+    workflow_runs = read_dict_from_json_file(workflow_runs_path)
+    return workflow_runs
 
 
 def check_workflow_jobs_for_cmd(workflow: Union[Dict[str, Any], List[Any]]) -> bool:
