@@ -70,10 +70,12 @@ if __name__ == '__main__':
 
     print('[!] Beginning analysis phase')
     analyze_project_member_count(
+        PROJECTS_STAGE_0_PATH,
         ORIGINAL_PROJECTS_MEMBER_DIST_IMG_PATH,
         ORIGINAL_PROJECTS_MEMBER_DIST_JSON_PATH
     )
     analyze_project_member_count(
+        PROJECTS_STAGE_6_PATH,
         FINAL_PROJECTS_MEMBER_DIST_IMG_PATH,
         FINAL_PROJECTS_MEMBER_DIST_JSON_PATH
     )

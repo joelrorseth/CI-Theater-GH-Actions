@@ -24,7 +24,7 @@ from projects import (
     GHTORRENT_PATH,
     NULL_SYMBOL,
     load_full_projects,
-    load_project_members,
+    load_original_project_members,
     load_projects,
     load_projects_and_partition,
     save_full_projects_df
@@ -46,7 +46,7 @@ def get_initial_projects(output_projects_path: str):
         return
 
     # Load project_members and determine project membership count
-    project_members_df = load_project_members()
+    project_members_df = load_original_project_members()
     repo_member_counts = project_members_df['repo_id'].value_counts()
 
     # Filter out projects that don't have more than a single member (which is most)

@@ -1,17 +1,23 @@
 from coverage import load_coverage
 from data_io import write_series_to_json_file
 from plot import plot_code_coverage_boxplots, plot_project_member_counts_histogram
-from projects import load_project_members
+from projects import load_full_projects, load_original_project_members
 
 
-def analyze_project_member_count(project_membership_count_dist_img_path: str,
+def analyze_project_member_count(projects_path: str,
+                                 project_membership_count_dist_img_path: str,
                                  project_membership_count_dist_path: str):
     print("[!] Analyzing project member counts")
 
-    # Count the number of members associated to each project
-    project_members_df = load_project_members()
-    repo_member_counts = project_members_df['repo_id'].value_counts()
+    # Get the intersection of original project members' projects and specified projects
+    project_members_df = load_original_project_members()
+    projects_df = load_full_projects(projects_path)
+    project_members_df = project_members_df[
+        project_members_df.repo_id.isin(projects_df.repo_id)
+    ]
 
+    # Count the number of members associated to each project
+    repo_member_counts = project_members_df['repo_id'].value_counts()
     print(f"Members per project mean: {repo_member_counts.mean()}")
     print(f"Members per project median: {repo_member_counts.median()}")
     print(f"Members per project std dev: {repo_member_counts.std()}")

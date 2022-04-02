@@ -54,7 +54,7 @@ def decode_repo_and_workflow_key(graphql_key: str) -> Tuple[str, int]:
     return str(repo_id), int(workflow_idx)
 
 
-def load_project_members() -> pd.DataFrame:
+def load_original_project_members() -> pd.DataFrame:
     """
     Read GHTorrent GitHub project member associations into a `pd.DataFrame`. Note that all
     original columns are maintained ('repo_id', 'user_id', and 'created_at').
