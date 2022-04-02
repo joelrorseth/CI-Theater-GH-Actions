@@ -65,11 +65,13 @@ def analyze_commit_frequency(projects_path: str, workflows_path: str,
 
             # Across all project workflows, map commit id to commit timestamp
             for run in workflow_runs:
-                if 'head_commit' in run and 'timestamp' in run['head_commit'] and 'id' in run['head_commit']:
+                if not run or run is None or not isinstance(run, dict):
+                    print(f"WARNING: Empty run in {workflow_runs_path}, skipping...")
+                elif 'head_commit' in run and isinstance(run['head_commit'], dict) and 'timestamp' in run['head_commit'] and 'id' in run['head_commit']:
                     project_commits[run['head_commit']
                                     ['timestamp']] = run['head_commit']['id']
                 else:
-                    print('WARNING: Empty commit, skipping...')
+                    print(f"WARNING: Empty commit in {workflow_runs_path}, skipping...")
 
         # Get min / max datetime observed across all commits
         commit_datetimes = [convert_str_to_datetime(
@@ -96,8 +98,9 @@ def analyze_commit_frequency(projects_path: str, workflows_path: str,
             num_proj_commits_by_valid_date.values()) / len(num_proj_commits_by_valid_date)
 
     num_valid_proj = len(valid_repo_id_strs)
+    print('Only commits from fully observed dates will be considered')
     print(
-        f"Only {num_valid_proj}/{len(projects)} projects have >= 1 full day of commit history")
+        f"{num_valid_proj}/{len(projects)} projects have >= 1 full day of commit history")
 
     # Calculate average daily commit rate across all projects (some projects may be ignored)
     average_daily_commit_rate = sum(
@@ -111,8 +114,8 @@ def analyze_commit_frequency(projects_path: str, workflows_path: str,
     num_frequent = len([f for f in valid_project_is_frequent.values() if f])
     num_infrequent = len(
         [f for f in valid_project_is_frequent.values() if not f])
-    print(f"{num_frequent}/{num_valid_proj} ({num_frequent/num_valid_proj}%) projects commit frequently")
-    print(f"{num_infrequent}/{num_valid_proj} ({num_infrequent/num_valid_proj}%) projects commit infrequently")
+    print(f"{num_frequent}/{num_valid_proj} ({(num_frequent/num_valid_proj)*100:.2f}%) projects commit frequently")
+    print(f"{num_infrequent}/{num_valid_proj} ({(num_infrequent/num_valid_proj)*100:.2f}%) projects commit infrequently")
 
     # TODO: Plot # commits vs project size, for each language
     print("[!] Done analyzing project commit frequency")
