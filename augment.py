@@ -9,15 +9,17 @@ import os
 from datetime import datetime, timedelta
 from typing import Any, Dict, List
 from branches import load_default_branches
+from coverage import save_coverage
 from coveralls_api_client import get_latest_coveralls_report_in_date_range
 from data_io import read_dict_from_json_file, write_dict_to_json_file
 from projects import load_projects, load_projects_and_partition
-from workflows import encode_workflow_runs_path, load_workflows
+from workflows import encode_workflow_runs_path, load_workflow_runs, load_workflows
 from config import (
     MAX_GITHUB_RESULTS_PER_PAGE,
     NUM_PAGES,
     NUM_PARTITIONS_DEFAULT_BRANCH,
-    NUM_WORKFLOW_RUNS
+    NUM_WORKFLOW_RUNS,
+    SUPPORTED_LANGUAGE_GROUPS_MAP
 )
 from github_api_client import (
     GITHUB_DATE_FORMAT,
@@ -146,7 +148,7 @@ def get_coveralls_info(projects_path: str, workflows_path: str, default_branches
                     f"ERROR: Workflow runs file does not exist at {workflow_runs_path}, aborting!")
                 exit()
 
-            workflow_runs = read_dict_from_json_file(workflow_runs_path)
+            workflow_runs = load_workflow_runs(workflow_runs_path)
             for run in workflow_runs:
                 proj_commits[run['created_at']] = run['head_sha']
 
@@ -162,9 +164,9 @@ def get_coveralls_info(projects_path: str, workflows_path: str, default_branches
         report = {}
 
         if len(ordered_proj_commits) == 0:
-            # No workflow runs existed
-            # TODO: Does this project really use CI? We should probably filter these cases out
-            write_dict_to_json_file(report, coveralls_report_filename)
+            print(
+                f"ERROR: No commits found for project id {project['id']}, aborting!")
+            exit()
         elif not os.path.isfile(coveralls_report_filename):
             # Get the latest Coveralls report created within 7 days before the latest build run
             max_report_date = datetime.strptime(
@@ -183,19 +185,20 @@ def get_coveralls_info(projects_path: str, workflows_path: str, default_branches
             # Report has already been retrieved, read it from disk
             report = read_dict_from_json_file(coveralls_report_filename)
 
-        # Aggregate coverage by programming language
+        # Aggregate coverage by programming language group
         if report:
             reports_found += 1
-            if project['language'] not in reports_found_by_lang:
-                reports_found_by_lang[project['language']] = []
-            reports_found_by_lang[project['language']].append(
+            language_group = SUPPORTED_LANGUAGE_GROUPS_MAP[project['language']]
+            if language_group not in reports_found_by_lang:
+                reports_found_by_lang[language_group] = []
+            reports_found_by_lang[language_group].append(
                 report['covered_percent'])
 
     print(
         f"Found Coveralls reports for {reports_found}/{len(projects)} projects")
 
     # Write project coverage to JSON file (will omit projects lacking Coveralls report)
-    write_dict_to_json_file(reports_found_by_lang, project_coverage_path)
+    save_coverage(reports_found_by_lang, project_coverage_path)
     for lang, coverages in reports_found_by_lang.items():
         print(f"Found {len(coverages)} coverage reports for {lang} projects")
 

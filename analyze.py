@@ -1,3 +1,4 @@
+from coverage import load_coverage
 from data_io import read_dict_from_json_file, write_series_to_json_file
 from plot import plot_code_coverage_boxplots, plot_project_member_counts_histogram
 from projects import load_project_members
@@ -50,7 +51,7 @@ def analyze_coverage(project_coverage_path: str, coverage_boxplot_img_path: str)
     where each boxplot illustrates the distribution of code coverage for projects using this
     language.
     """
-    coverage_by_lang = read_dict_from_json_file(project_coverage_path)
+    coverage_by_lang = load_coverage(project_coverage_path)
     plot_code_coverage_boxplots(coverage_by_lang, coverage_boxplot_img_path)
 
 
