@@ -221,7 +221,7 @@ def filter_by_default_branch_existence(input_projects_path: str, output_projects
 
     # Remove projects that do not have an entry in the default branch dict
     projects_df = projects_df[projects_df.repo_id.isin(
-        default_branches_dict.keys())]
+        [int(repo_id) for repo_id in default_branches_dict.keys()])]
     print(
         f"{num_projects_before} projects were reduced to {projects_df.shape[0]}")
 
