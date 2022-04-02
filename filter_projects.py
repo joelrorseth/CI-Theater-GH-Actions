@@ -9,7 +9,12 @@ import os
 from typing import List
 import pandas as pd
 from branches import load_default_branches
-from config import NUM_MEMBER_PARTITIONS, NUM_REQUIRED_WORKFLOW_RUNS, NUM_WORKFLOW_PARTITIONS, NUM_YAML_PARTITIONS
+from config import (
+    NUM_MEMBER_PARTITIONS,
+    NUM_REQUIRED_WORKFLOW_RUNS,
+    NUM_WORKFLOW_PARTITIONS,
+    NUM_YAML_PARTITIONS
+)
 from github_api_client import (
     combine_partitioned_workflow_filenames,
     get_workflow_files_partitioned,
@@ -18,14 +23,19 @@ from github_api_client import (
 from projects import (
     GHTORRENT_PATH,
     NULL_SYMBOL,
-    decode_repo_key,
     load_full_projects,
     load_project_members,
     load_projects,
     load_projects_and_partition,
     save_full_projects_df
 )
-from workflows import encode_workflow_runs_path, get_workflows_using_ci, load_workflow_runs, load_workflows, save_workflows
+from workflows import (
+    encode_workflow_runs_path,
+    get_workflows_using_ci,
+    load_workflow_runs,
+    load_workflows,
+    save_workflows
+)
 
 
 def get_initial_projects(output_projects_path: str):
@@ -242,7 +252,7 @@ def filter_by_workflow_run_history(input_projects_path: str, output_projects_pat
         print(f"[!] {output_projects_path} already exists, skipping...")
         return
 
-    projects = load_projects(input_projects_path)
+    projects = load_projects(input_projects_path, False)
     workflows_dict = load_workflows(input_workflows_path)
     repo_ids_to_keep = []
 
@@ -252,7 +262,7 @@ def filter_by_workflow_run_history(input_projects_path: str, output_projects_pat
             print(
                 f"Filtering projects by # of workflow runs ({i}/{len(projects)})...")
         workflow_ids_to_remove = []
-        repo_id_str = decode_repo_key(project['id'])
+        repo_id_str = project['id']
         for workflow_idx_str, _ in workflows_dict[repo_id_str].items():
             workflow_runs_path = encode_workflow_runs_path(
                 workflow_runs_prefix, repo_id_str, workflow_idx_str)
