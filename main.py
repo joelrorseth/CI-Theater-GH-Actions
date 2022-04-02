@@ -1,4 +1,4 @@
-from augment import get_default_branches_for_projects, get_workflow_runs
+from augment import get_coveralls_info, get_default_branches_for_projects, get_workflow_runs
 from config import DATA_FOLDER, SUPPORTED_LANGUAGES
 from filter_projects import (
     filter_by_default_branch_existence,
@@ -26,6 +26,7 @@ DEFAULT_BRANCHES_PREFIX = f"{DATA_FOLDER}/default_branches"
 DEFAULT_BRANCHES_PATH = f"{DEFAULT_BRANCHES_PREFIX}.json"
 WORKFLOW_RUNS_PREFIX = f"{DATA_FOLDER}/workflow_runs"
 PROJECT_COVERAGE_PREFIX = f"{DATA_FOLDER}/project_coverage"
+LANGUAGE_COVERAGE_PATH = f"{DATA_FOLDER}/language_coverage.json"
 
 if __name__ == '__main__':
     print('CI Theater (GitHub Actions edition)')
@@ -55,5 +56,7 @@ if __name__ == '__main__':
     filter_by_workflow_run_history(PROJECTS_STAGE_5_PATH, PROJECTS_STAGE_6_PATH,
                                    WORKFLOWS_STAGE_4_PATH, WORKFLOWS_STAGE_6_PATH,
                                    WORKFLOW_RUNS_PREFIX)
+    get_coveralls_info(PROJECTS_STAGE_6_PATH, WORKFLOWS_STAGE_6_PATH, DEFAULT_BRANCHES_PATH,
+                       WORKFLOW_RUNS_PREFIX, PROJECT_COVERAGE_PREFIX, LANGUAGE_COVERAGE_PATH)
 
     print('Done')

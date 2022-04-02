@@ -248,8 +248,9 @@ def filter_by_workflow_run_history(input_projects_path: str, output_projects_pat
     print(
         f"[!] Filtering out projects with < {NUM_REQUIRED_WORKFLOW_RUNS} workflow runs")
 
-    if os.path.isfile(output_projects_path):
-        print(f"[!] {output_projects_path} already exists, skipping...")
+    if os.path.isfile(output_projects_path) and os.path.isfile(output_workflows_path):
+        print(
+            f"[!] {output_projects_path} and {output_workflows_path} already exist, skipping...")
         return
 
     projects = load_projects(input_projects_path, False)

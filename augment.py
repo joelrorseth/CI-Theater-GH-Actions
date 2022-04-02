@@ -30,9 +30,9 @@ from github_api_client import (
 
 def encode_coveralls_report_path(project_coverage_prefix: str, repo_id: str) -> str:
     """
-    Encode a path for the Coveralls report corresponding to a given project. Produces a
-    filename of the form `coveralls_report_repo123.json`, which indicates that the file contains
-    the Coveralls report for repo 123.
+    Encode a path for the Coveralls report corresponding to a given project. Produces a path
+    of the form `data/project_coverage_repo123.json`, which indicates that the file contains
+    the Coveralls coverage report for repo 123.
     """
     return f"{project_coverage_prefix}_repo{repo_id}.json"
 
@@ -126,10 +126,13 @@ def get_workflow_runs(projects_path: str, workflows_path: str, default_branches_
 
 def get_coveralls_info(projects_path: str, workflows_path: str, default_branches_path: str,
                        workflow_runs_prefix: str, project_coverage_prefix: str,
-                       project_coverage_path: str) -> None:
+                       language_coverage_path: str) -> None:
     print('[!] Retrieving Coveralls code coverage info for each project')
-    reports_found, reports_found_by_lang = 0, {}
+    if os.path.isfile(language_coverage_path):
+        print(f"[!] {language_coverage_path} already exists, skipping...")
+        return
 
+    reports_found, reports_found_by_lang = 0, {}
     projects, workflows_dict, default_branches_dict = load_projects_workflows_branches(
         projects_path, workflows_path, default_branches_path)
 
@@ -197,8 +200,8 @@ def get_coveralls_info(projects_path: str, workflows_path: str, default_branches
     print(
         f"Found Coveralls reports for {reports_found}/{len(projects)} projects")
 
-    # Write project coverage to JSON file (will omit projects lacking Coveralls report)
-    save_coverage(reports_found_by_lang, project_coverage_path)
+    # Write project language coverage to JSON file (will omit projects lacking Coveralls report)
+    save_coverage(reports_found_by_lang, language_coverage_path)
     for lang, coverages in reports_found_by_lang.items():
         print(f"Found {len(coverages)} coverage reports for {lang} projects")
 
