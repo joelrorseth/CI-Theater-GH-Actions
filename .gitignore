@@ -153,6 +153,6 @@ cython_debug/
 
 # Project-specific files
 run*.sh
-test_responses
+temp
 data
 .DS_Store
