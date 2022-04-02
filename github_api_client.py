@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 import numpy as np
+from datetime import datetime
 from typing import Any, Dict, List, Optional
 from requests.utils import quote
 from base_api_client import OptionalParams, get_from_url, post_to_url
@@ -22,6 +23,10 @@ def build_dup_workflow_warning(repo_id, workflow_filename):
 
 def build_dup_branch_name_warning(repo_id):
     return f"WARNING: Default branch name for repo with ID {repo_id} has already been retrieved, will replace."
+
+
+def convert_str_to_datetime(date_str: str) -> datetime:
+    return datetime.strptime(date_str, GITHUB_DATE_FORMAT)
 
 
 def get_from_github(slug: str, output_filename: OutputFile = None, params: OptionalParams = None):

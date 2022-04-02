@@ -6,12 +6,12 @@
 #
 
 import os
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import Any, Dict, List
 from branches import load_default_branches
 from coverage import save_coverage
 from coveralls_api_client import get_latest_coveralls_report_in_date_range
-from data_io import read_dict_from_json_file, write_dict_to_json_file
+from data_io import read_dict_from_json_file
 from projects import load_projects, load_projects_and_partition
 from workflows import encode_workflow_runs_path, load_workflow_runs, load_workflows
 from config import (
@@ -22,7 +22,7 @@ from config import (
     SUPPORTED_LANGUAGE_GROUPS_MAP
 )
 from github_api_client import (
-    GITHUB_DATE_FORMAT,
+    convert_str_to_datetime,
     get_default_branch_for_repos_partitioned,
     get_runs_for_workflow
 )
@@ -158,7 +158,7 @@ def get_coveralls_info(projects_path: str, workflows_path: str, default_branches
         # Sort the commit SHAs by workflow run date (get newest commits first)
         ordered_proj_commits = sorted(
             proj_commits.items(),
-            key=lambda x: datetime.strptime(x[0], GITHUB_DATE_FORMAT),
+            key=lambda x: convert_str_to_datetime(x[0]),
             reverse=True
         )
 
@@ -172,8 +172,8 @@ def get_coveralls_info(projects_path: str, workflows_path: str, default_branches
             exit()
         elif not os.path.isfile(coveralls_report_filename):
             # Get the latest Coveralls report created within 7 days before the latest build run
-            max_report_date = datetime.strptime(
-                ordered_proj_commits[0][0], GITHUB_DATE_FORMAT)
+            max_report_date = convert_str_to_datetime(
+                ordered_proj_commits[0][0])
             min_report_date = max_report_date - timedelta(days=7)
 
             report = get_latest_coveralls_report_in_date_range(
