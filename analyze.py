@@ -65,8 +65,11 @@ def analyze_commit_frequency(projects_path: str, workflows_path: str,
 
             # Across all project workflows, map commit id to commit timestamp
             for run in workflow_runs:
-                project_commits[run['head_commit']
-                                ['timestamp']] = run['head_commit']['id']
+                if 'head_commit' in run and 'timestamp' in run['head_commit'] and 'id' in run['head_commit']:
+                    project_commits[run['head_commit']
+                                    ['timestamp']] = run['head_commit']['id']
+                else:
+                    print('WARNING: Empty commit, skipping...')
 
         # Get min / max datetime observed across all commits
         commit_datetimes = [convert_str_to_datetime(
