@@ -18,6 +18,7 @@ from github_api_client import (
 from projects import (
     GHTORRENT_PATH,
     NULL_SYMBOL,
+    decode_repo_key,
     load_full_projects,
     load_project_members,
     load_projects,
@@ -251,9 +252,10 @@ def filter_by_workflow_run_history(input_projects_path: str, output_projects_pat
             print(
                 f"Filtering projects by # of workflow runs ({i}/{len(projects)})...")
         workflow_ids_to_remove = []
-        for workflow_idx_str, _ in workflows_dict[project['id']].items():
+        repo_id_str = decode_repo_key(project['id'])
+        for workflow_idx_str, _ in workflows_dict[repo_id_str].items():
             workflow_runs_path = encode_workflow_runs_path(
-                workflow_runs_prefix, project['id'], workflow_idx_str)
+                workflow_runs_prefix, repo_id_str, workflow_idx_str)
             workflow_runs = load_workflow_runs(workflow_runs_path)
 
             # Mark workflow for removal if unsufficient workflow runs exist for it
@@ -262,13 +264,13 @@ def filter_by_workflow_run_history(input_projects_path: str, output_projects_pat
 
         # Remove workflows that were flagged
         for workflow_id_to_remove in workflow_ids_to_remove:
-            workflows_dict[project['id']].pop(workflow_id_to_remove)
+            workflows_dict[repo_id_str].pop(workflow_id_to_remove)
 
         # If no workflows remain, remove the project from workflows dict
-        if not workflows_dict[project['id']]:
-            workflows_dict.pop(project['id'])
+        if not workflows_dict[repo_id_str]:
+            workflows_dict.pop(repo_id_str)
         else:
-            repo_ids_to_keep.append(int(project['id']))
+            repo_ids_to_keep.append(int(repo_id_str))
 
     # Remove any projects that had 0 workflows left after filtering
     projects_df = load_full_projects(input_projects_path, quiet=True)
