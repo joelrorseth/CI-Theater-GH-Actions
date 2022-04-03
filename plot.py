@@ -1,8 +1,10 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
-from typing import Any, Dict, List
+from typing import Any, Callable, Dict, List
 from data_io import OutputFile
+
+BoxplotterSignature = Callable[[str, Dict[str, List[Any]], OutputFile], None]
 
 
 def plot_boxplots(data: Dict[str, List[Any]], title: str, xlabel: str, ylabel: str,
@@ -57,6 +59,21 @@ def plot_broken_builds_boxplots(language: str, data: Dict[str, List[Any]],
     """
     plot_boxplots(data, f"{language} Projects", 'Project Member Count Size',
                   '# Hours Broken', output_filename, show_outliers=False)
+
+
+def plot_build_duration_boxplots(language: str, data: Dict[str, List[Any]],
+                                 output_filename: OutputFile) -> None:
+    """
+    Build a figure containing multiple boxplots, one for each member count size category. Each
+    boxplot corresponds to an entry in the specified `data` dict, where each key is a member
+    count size category, and the associated list of values are the build durations in mins (for
+    various workflow runs across projects in that size category). Example `data` dict:
+    ```
+    {'Very Small': [20,45,60], 'Small': [10,15,80,90,17], ...}
+    ```
+    """
+    plot_boxplots(data, f"{language} Projects", 'Project Member Count Size',
+                  'Duration (mins)', output_filename, show_outliers=False)
 
 
 def plot_project_member_counts_histogram(value_counts: pd.Series, output_filename: OutputFile) -> None:
