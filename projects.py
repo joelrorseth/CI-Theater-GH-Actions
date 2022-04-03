@@ -93,24 +93,17 @@ def get_member_count_sizes_for_projects(unencoded_projects: Projects) -> Dict[st
     ```
     """
     def get_size_for_num_members(num_members: int) -> str:
-        for size, size_range in MEMBER_COUNT_SIZES_MAP:
+        for size, size_range in MEMBER_COUNT_SIZES_MAP.items():
             if num_members >= size_range[0] and num_members <= size_range[1]:
                 return size
         return 'Unknown'
 
     project_members_df = load_original_project_members(True)
     member_counts = project_members_df['repo_id'].value_counts()
-    target_repo_ids = set([proj['id'] for proj in unencoded_projects])
-    sizes_map = {}
+    repo_ids = set([proj['id'] for proj in unencoded_projects])
 
     # Extract member count for specified projects, bin these numbers into size categories
-    for idx, repo_id in enumerate(member_counts.index.tolist()):
-        repo_id_str = str(repo_id)
-        num_members = member_counts[idx]
-        if repo_id_str in target_repo_ids:
-            sizes_map[repo_id_str] = get_size_for_num_members(num_members)
-
-    return sizes_map
+    return {repo_id: get_size_for_num_members(member_counts[int(repo_id)]) for repo_id in repo_ids}
 
 
 def load_full_projects(input_projects_path: str, quiet: bool = False) -> pd.DataFrame:

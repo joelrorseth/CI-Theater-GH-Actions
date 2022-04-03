@@ -277,7 +277,7 @@ def analyze_broken_build_duration(projects_path: str, workflows_path: str,
         plot_broken_builds_boxplots(
             language_group,
             data_per_size,
-            f"{broken_builds_img_prefix}_{SUPPORTED_LANGUAGE_GROUPS_FILENAME_MAP[language_group]}"
+            f"{broken_builds_img_prefix}_{SUPPORTED_LANGUAGE_GROUPS_FILENAME_MAP[language_group]}.png"
         )
 
     print('[!] Done analyzing broken build duration')
