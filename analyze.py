@@ -39,7 +39,7 @@ TimedeltasByProject = Dict[str, TimedeltaList]
 
 
 def flatten_list(my_list: List[List[Any]]) -> List[Any]:
-    [item for sublist in my_list for item in sublist]
+    return [item for sublist in my_list for item in sublist]
 
 
 def print_timedelta_stats(subject: str, timedeltas: TimedeltaList, language: str = 'All') -> None:
