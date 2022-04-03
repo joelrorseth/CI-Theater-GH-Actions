@@ -43,6 +43,21 @@ def plot_code_coverage_boxplots(coverage: Dict[str, List[Any]], output_filename:
                   'Distribution', output_filename)
 
 
+def plot_broken_builds_boxplots(language: str, data: Dict[str, List[Any]],
+                                output_filename: OutputFile) -> None:
+    """
+    Build a figure containing multiple boxplots, one for each member count size category. Each
+    boxplot corresponds to an entry in the specified `data` dict, where each key is a member
+    count size category, and the associated list of values are the # hours broken (for various
+    workflow runs across projects in that size category). Example `data` dict:
+    ```
+    {'Very Small': [12,14,2], 'Small': [10,15,8,9,7], ...}
+    ```
+    """
+    plot_boxplots(data, f"{language} Projects", 'Project Member Count Size',
+                  '# Hours Broken', output_filename)
+
+
 def plot_project_member_counts_histogram(value_counts: pd.Series, output_filename: OutputFile) -> None:
     """
     Build a histogram to visualize a pandas value_counts() series.
