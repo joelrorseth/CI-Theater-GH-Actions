@@ -6,7 +6,7 @@ from data_io import OutputFile
 
 
 def plot_boxplots(data: Dict[str, List[Any]], title: str, xlabel: str, ylabel: str,
-                  output_filename: OutputFile) -> None:
+                  output_filename: OutputFile, show_outliers: bool = True) -> None:
     """
     Build a figure containing multiple boxplots. Each boxplot corresponds to an entry in the
     specified `data` dict, meaning each value and key specify a boxplot and corresponding label.
@@ -17,7 +17,7 @@ def plot_boxplots(data: Dict[str, List[Any]], title: str, xlabel: str, ylabel: s
     """
 
     fig, ax = plt.subplots()
-    ax.boxplot(data.values())
+    ax.boxplot(data.values(), showfliers=show_outliers)
     ax.set_title(title)
     ax.set_xticklabels(data.keys())
     ax.set_xlabel(xlabel)
@@ -56,7 +56,7 @@ def plot_broken_builds_boxplots(language: str, data: Dict[str, List[Any]],
     ```
     """
     plot_boxplots(data, f"{language} Projects", 'Project Member Count Size',
-                  '# Hours Broken', output_filename)
+                  '# Hours Broken', output_filename, show_outliers=False)
 
 
 def plot_project_member_counts_histogram(value_counts: pd.Series, output_filename: OutputFile) -> None:
