@@ -1,4 +1,3 @@
-from analyze import analyze_commit_frequency, analyze_coverage, analyze_project_member_count
 from augment import get_coveralls_info, get_default_branches_for_projects, get_workflow_runs
 from config import DATA_FOLDER, RESULTS_FOLDER, SUPPORTED_LANGUAGES
 from filter_projects import (
@@ -9,6 +8,12 @@ from filter_projects import (
     filter_forked_projects,
     filter_projects_by_lang,
     get_initial_projects
+)
+from analyze import (
+    analyze_broken_build_duration,
+    analyze_commit_frequency,
+    analyze_coverage,
+    analyze_project_member_count
 )
 
 # These filenamess / paths are declared in order of creation
@@ -82,4 +87,7 @@ if __name__ == '__main__':
     analyze_coverage(LANGUAGE_COVERAGE_PATH, PROJECT_COVERAGE_BY_LANG_IMG_PATH)
     analyze_commit_frequency(PROJECTS_STAGE_6_PATH,
                              WORKFLOWS_STAGE_6_PATH, WORKFLOW_RUNS_PREFIX)
+    analyze_broken_build_duration(PROJECTS_STAGE_6_PATH,
+                                  WORKFLOWS_STAGE_6_PATH, WORKFLOW_RUNS_PREFIX)
+
     print('Done')
