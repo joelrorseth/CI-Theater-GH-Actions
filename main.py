@@ -11,6 +11,7 @@ from filter_projects import (
 )
 from analyze import (
     analyze_broken_build_duration,
+    analyze_build_duration,
     analyze_commit_frequency,
     analyze_coverage,
     analyze_project_member_count
@@ -41,7 +42,7 @@ FINAL_PROJECTS_MEMBER_DIST_IMG_PATH = f"{RESULTS_FOLDER}/final_projects_member_d
 FINAL_PROJECTS_MEMBER_DIST_JSON_PATH = f"{RESULTS_FOLDER}/final_projects_member_dist.json"
 PROJECT_COVERAGE_BY_LANG_IMG_PATH = f"{RESULTS_FOLDER}/project_coverage_by_language.png"
 BROKEN_BUILDS_IMG_PREFIX = f"{RESULTS_FOLDER}/broken_builds"
-
+BUILD_DURATION_IMG_PREFIX = f"{RESULTS_FOLDER}/build_duration"
 
 if __name__ == '__main__':
     print('CI Theater (GitHub Actions edition)')
@@ -90,5 +91,7 @@ if __name__ == '__main__':
                              WORKFLOWS_STAGE_6_PATH, WORKFLOW_RUNS_PREFIX)
     analyze_broken_build_duration(PROJECTS_STAGE_6_PATH, WORKFLOWS_STAGE_6_PATH,
                                   WORKFLOW_RUNS_PREFIX, BROKEN_BUILDS_IMG_PREFIX)
+    analyze_build_duration(PROJECTS_STAGE_6_PATH, WORKFLOWS_STAGE_6_PATH,
+                           WORKFLOW_RUNS_PREFIX, BUILD_DURATION_IMG_PREFIX)
 
     print('Done')
