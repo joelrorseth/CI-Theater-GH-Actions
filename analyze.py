@@ -37,22 +37,32 @@ TimedeltaList = List[timedelta]
 TimedeltasByProject = Dict[str, TimedeltaList]
 
 
-def print_timedelta_stats(timedeltas: TimedeltaList, language: str = 'All') -> None:
+def print_timedelta_stats(subject:str, timedeltas: TimedeltaList, language: str = 'All') -> None:
+    timedeltas_in_secs = [td.total_seconds() for td in timedeltas]
     delta_avg = sum(timedeltas, timedelta(0)) / len(timedeltas)
-    delta_third_quar = np.quantile(timedeltas, 0.75)
-    delta_median = np.median(timedeltas)
-    delta_std_dev = np.std(timedeltas)
-    print(f"Timedelta stats for {language} projects:")
+    delta_quantile_50 = np.quantile(timedeltas, 0.50)
+    delta_quantile_75 = np.quantile(timedeltas, 0.75)
+    delta_quantile_90 = np.quantile(timedeltas, 0.90)
+    delta_quantile_95 = np.quantile(timedeltas, 0.95)
+    delta_quantile_99 = np.quantile(timedeltas, 0.99)
+    delta_std_dev = np.std(timedeltas_in_secs)
+    print(f"{subject} stats for {language} projects ({len(timedeltas)} timedeltas):")
     print(f"\tAverage: {delta_avg}")
-    print(f"\tMedian: {delta_median}")
-    print(f"\t3rd Quartile: {delta_third_quar}")
-    print(f"\tStd Dev: {delta_std_dev}")
+    print(f"\tMedian: {delta_quantile_50}")
+    print(f"\tMax: {max(timedeltas)}")
+    print(f"\tStd Dev: {timedelta(seconds=delta_std_dev)}")
+    print(f"\t0.75 Quantile: {delta_quantile_75}")
+    print(f"\t0.90 Quantile: {delta_quantile_90}")
+    print(f"\t0.95 Quantile: {delta_quantile_95}")
+    print(f"\t0.99 Quantile: {delta_quantile_99}")
+    print()
 
 
-def print_timedelta_stats_for_all_langs(unencoded_projects: Projects,
+def print_timedelta_stats_for_all_langs(subject:str, unencoded_projects: Projects,
                                         timedeltas_by_proj: TimedeltasByProject) -> None:
     # Print stats about all projects in general
     print_timedelta_stats(
+        subject,
         [item for sublist in timedeltas_by_proj.values() for item in sublist],
         'All'
     )
@@ -64,7 +74,8 @@ def print_timedelta_stats_for_all_langs(unencoded_projects: Projects,
             for p in unencoded_projects
             if SUPPORTED_LANGUAGE_GROUPS_MAP[p['language']] == language_group
         ]
-        print_timedelta_stats(lang_timedeltas, language_group)
+        lang_timedeltas = [item for sublist in lang_timedeltas for item in sublist]
+        print_timedelta_stats(subject, lang_timedeltas, language_group)
 
 
 def count_projects_exceeding_thresh(timedeltas_by_proj: TimedeltasByProject,
@@ -287,12 +298,12 @@ def analyze_broken_build_duration(projects_path: str, workflows_path: str,
                     fail_end_datetime = prev_conclusion['commit_timestamp']
 
                     # Add timedelta between failure start / end to results list
-                    if fail_start_datetime <= fail_end_datetime:
+                    if fail_start_datetime < fail_end_datetime:
                         failure_timedeltas.append(
                             fail_end_datetime - fail_start_datetime)
-                    else:
-                        print(
-                            'WARNING: Failure start timestamp > end timestamp, skipping...')
+                    #else:
+                    #    print(
+                    #        'WARNING: Failure start timestamp >= end timestamp, skipping...')
 
                     fail_start_conclusion = None
             else:
@@ -337,7 +348,7 @@ def analyze_broken_build_duration(projects_path: str, workflows_path: str,
         failure_timedeltas[repo_id_str] = project_failure_timedeltas
 
     # Print timedelta stats
-    print_timedelta_stats_for_all_langs(projects, failure_timedeltas)
+    print_timedelta_stats_for_all_langs('Broken build duration', projects, failure_timedeltas)
 
     # The third quartile of the overall duration of broken builds is the acceptable threshold
     all_timedeltas = [item for sublist in failure_timedeltas.values()
@@ -382,10 +393,10 @@ def analyze_build_duration(projects_path: str, workflows_path: str,
                 if run['status'] == 'completed':
                     run_start = convert_str_to_datetime(run['created_at'])
                     run_end = convert_str_to_datetime(run['updated_at'])
-                    if run_start <= run_end:
+                    if run_start < run_end:
                         workflow_durations.append(run_end - run_start)
-                    else:
-                        print('WARNING: Run start time > end time, skipping...')
+                    #else:
+                    #    print('WARNING: Run start time >= end time, skipping...')
             else:
                 print('WARNING: Incomplete commit, skipping...')
         return workflow_durations
@@ -419,7 +430,7 @@ def analyze_build_duration(projects_path: str, workflows_path: str,
         workflow_durations_by_proj[repo_id_str] = project_workflow_durations
 
     # Print timedelta stats
-    print_timedelta_stats_for_all_langs(projects, workflow_durations_by_proj)
+    print_timedelta_stats_for_all_langs('Build duration', projects, workflow_durations_by_proj)
 
     # Determine how many projects had at least one build (run) that took longer than threshold
     count_projects_exceeding_thresh(
