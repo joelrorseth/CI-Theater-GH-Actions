@@ -36,6 +36,7 @@ from data_io import (
 WorkflowFilenameDict = Dict[str, List[Dict[str, str]]]
 WorkflowInfoDict = Dict[str, Dict[str, Dict[str, str]]]
 AnyWorkflowDict = Union[WorkflowFilenameDict, WorkflowInfoDict]
+WorkflowRuns = List[Dict[str, Any]]
 
 
 def encode_workflow_runs_path(workflow_runs_prefix: str, repo_id: str,
@@ -69,7 +70,7 @@ def save_workflows(project_workflows_dict: Dict, output_workflows_path: str) -> 
         f"Wrote workflows for {len(project_workflows_dict.keys())} projects to {output_workflows_path}")
 
 
-def load_workflow_runs(workflow_runs_path: str) -> List[Dict[Any, Any]]:
+def load_workflow_runs(workflow_runs_path: str) -> WorkflowRuns:
     """
     Read workflow runs for a given project / workflow from a JSON file, and write the data into
     a list of dictionaries.
