@@ -1,3 +1,4 @@
+from ctypes import Union
 import numpy as np
 from collections import defaultdict
 from datetime import datetime, timedelta
@@ -6,9 +7,57 @@ from config import MEMBER_COUNT_SIZES, SUPPORTED_LANGUAGE_GROUPS, SUPPORTED_LANG
 from coverage import load_coverage
 from data_io import write_series_to_json_file
 from github_api_client import convert_str_to_datetime
-from plot import plot_broken_builds_boxplots, plot_code_coverage_boxplots, plot_project_member_counts_histogram
-from projects import get_member_count_sizes_for_projects, load_full_projects, load_original_project_members, load_projects
+from plot import BoxplotterSignature, plot_broken_builds_boxplots, plot_build_duration_boxplots, plot_code_coverage_boxplots, plot_project_member_counts_histogram
+from projects import Projects, get_member_count_sizes_for_projects, load_full_projects, load_original_project_members, load_projects
 from workflows import WorkflowRuns, encode_workflow_runs_path, load_workflow_runs, load_workflows
+
+
+TimedeltaList = List[timedelta]
+TimedeltasByProject = Dict[str, TimedeltaList]
+
+
+def count_projects_exceeding_thresh(timedeltas_by_proj: TimedeltasByProject,
+                                    timedelta_thresh: timedelta) -> None:
+    projects_exceeding_thresh = 0
+    for _, deltas in timedeltas_by_proj.items():
+        if any([delta > timedelta_thresh for delta in deltas]):
+            projects_exceeding_thresh += 1
+
+    exceed_ratio = f"{projects_exceeding_thresh}/{len(timedeltas_by_proj)}"
+    exceed_perc = f"({(projects_exceeding_thresh/len(timedeltas_by_proj))*100:.2f}%)"
+    print(f"{exceed_ratio} {exceed_perc} projects have >= 1 builds exceeding {timedelta_thresh}")
+
+
+def build_boxplots_by_size_for_langs(unencoded_projects: Projects,
+                                     timedeltas_by_proj: TimedeltasByProject,
+                                     boxplotter: BoxplotterSignature,
+                                     img_prefix: str,
+                                     units: str = 'hours') -> None:
+    member_count_sizes = get_member_count_sizes_for_projects(
+        unencoded_projects)
+    for language_group in SUPPORTED_LANGUAGE_GROUPS:
+        data_per_size = {}
+        for size in MEMBER_COUNT_SIZES:
+            projects_for_lang_size = [
+                timedeltas_by_proj[p['id']]
+                for p in unencoded_projects
+                if (
+                    SUPPORTED_LANGUAGE_GROUPS_MAP[p['language']] == language_group and
+                    member_count_sizes[p['id']] == size
+                )
+            ]
+            denom = 1
+            if units == 'hours':
+                denom = 3600
+            if units == 'minutes':
+                denom = 60
+            timedeltas_for_lang_size = [
+                td.seconds//denom for proj_tds in projects_for_lang_size for td in proj_tds]
+            data_per_size[size] = timedeltas_for_lang_size
+
+        # Produce boxplot for this language group / member count size combo
+        boxplotter(language_group, data_per_size,
+                   f"{img_prefix}_{SUPPORTED_LANGUAGE_GROUPS_FILENAME_MAP[language_group]}.png")
 
 
 def analyze_project_member_count(projects_path: str,
@@ -147,7 +196,6 @@ def analyze_broken_build_duration(projects_path: str, workflows_path: str,
     """
 
     ConclusionsTimeline = List[Tuple[datetime, Dict[str, Any]]]
-    ProjectFailureTimedeltas = Dict[str, List[timedelta]]
 
     def build_workflow_conclusions(workflow_runs: WorkflowRuns) -> ConclusionsTimeline:
         workflow_conclusions = {}
@@ -172,7 +220,7 @@ def analyze_broken_build_duration(projects_path: str, workflows_path: str,
                 print('WARNING: Incomplete commit, skipping...')
         return sorted(workflow_conclusions.items(), key=lambda x: x[0], reverse=False)
 
-    def get_workflow_failure_timedeltas(conclusions: ConclusionsTimeline) -> List[timedelta]:
+    def get_workflow_failure_timedeltas(conclusions: ConclusionsTimeline) -> TimedeltaList:
         fail_start_conclusion, prev_conclusion = None, None
         first_success_seen = False
         failure_timedeltas = []
@@ -210,7 +258,7 @@ def analyze_broken_build_duration(projects_path: str, workflows_path: str,
     projects = load_projects(projects_path, False)
     workflows_dict = load_workflows(workflows_path)
 
-    failure_timedeltas: ProjectFailureTimedeltas = defaultdict(list)
+    failure_timedeltas: TimedeltasByProject = {}
 
     # Iterate through each workflow for each project
     for project in projects:
@@ -247,37 +295,88 @@ def analyze_broken_build_duration(projects_path: str, workflows_path: str,
         f"The broken build duration threshold (3rd quartile) is {failure_thresh}")
 
     # Determine how many projects had at least one build (run) that took longer than threshold
-    projects_exceeding_thresh = 0
-    for repo_id_str, deltas in failure_timedeltas.items():
-        if any([delta > failure_thresh for delta in deltas]):
-            projects_exceeding_thresh += 1
-
-    exceed_ratio = f"{projects_exceeding_thresh}/{len(failure_timedeltas)}"
-    exceed_perc = f"({(projects_exceeding_thresh/len(failure_timedeltas))*100:.2f}%)"
-    print(f"{exceed_ratio} {exceed_perc} projects have >= 1 builds exceeding {failure_thresh}")
+    count_projects_exceeding_thresh(failure_timedeltas, failure_thresh)
 
     # Produce boxplot for each language group, plotting # days broken per member count size
-    member_count_sizes = get_member_count_sizes_for_projects(projects)
-    for language_group in SUPPORTED_LANGUAGE_GROUPS:
-        data_per_size = {}
-        for size in MEMBER_COUNT_SIZES:
-            projects_for_lang_size = [
-                failure_timedeltas[p['id']]
-                for p in projects
-                if (
-                    SUPPORTED_LANGUAGE_GROUPS_MAP[p['language']] == language_group and
-                    member_count_sizes[p['id']] == size
-                )
-            ]
-            timedeltas_hrs_for_lang_size = [
-                td.seconds//3600 for proj_tds in projects_for_lang_size for td in proj_tds]
-            data_per_size[size] = timedeltas_hrs_for_lang_size
-
-        # Produce boxplot for this language group / member count size combo
-        plot_broken_builds_boxplots(
-            language_group,
-            data_per_size,
-            f"{broken_builds_img_prefix}_{SUPPORTED_LANGUAGE_GROUPS_FILENAME_MAP[language_group]}.png"
-        )
+    build_boxplots_by_size_for_langs(
+        projects,
+        failure_timedeltas,
+        plot_broken_builds_boxplots,
+        broken_builds_img_prefix,
+        'hours'
+    )
 
     print('[!] Done analyzing broken build duration')
+
+
+def analyze_build_duration(projects_path: str, workflows_path: str,
+                           workflow_runs_prefix: str, build_duration_img_prefix: str) -> None:
+    """
+    RQ4: How common are long running builds? In order to provide quick feedback, builds should
+    be executed in under 10 minutes.
+    To answer this RQ, ...
+    """
+
+    def build_workflow_durations(workflow_runs: WorkflowRuns) -> TimedeltaList:
+        workflow_durations = []
+        for run in workflow_runs:
+            if not run or run is None or not isinstance(run, dict):
+                print('WARNING: Empty run, skipping...')
+                continue
+
+            depth1_fields = ['status', 'created_at', 'updated_at']
+            all_fields_exist = all([f in run for f in depth1_fields])
+            if all_fields_exist:
+                if run['status'] == 'completed':
+                    run_start = convert_str_to_datetime(run['created_at'])
+                    run_end = convert_str_to_datetime(run['updated_at'])
+                    if run_start <= run_end:
+                        workflow_durations.append(run_end - run_start)
+                    else:
+                        print('WARNING: Run start time > end time, skipping...')
+            else:
+                print('WARNING: Incomplete commit, skipping...')
+        return workflow_durations
+
+    print('[!] Analyzing build duration')
+
+    projects = load_projects(projects_path, False)
+    workflows_dict = load_workflows(workflows_path)
+
+    duration_thresh_mins = 10
+    duration_thresh_timedelta = timedelta(minutes=duration_thresh_mins)
+    workflow_durations_by_proj: TimedeltasByProject = {}
+    print(
+        f"Identifying builds that do not execute in under {duration_thresh_mins} minutes")
+
+    # Iterate through each workflow for each project
+    for project in projects:
+        repo_id_str = project['id']
+        project_workflow_durations = []
+
+        for workflow_idx_str, _ in workflows_dict[repo_id_str].items():
+            # Get workflow runs
+            workflow_runs_path = encode_workflow_runs_path(
+                workflow_runs_prefix, repo_id_str, workflow_idx_str)
+            workflow_runs = load_workflow_runs(workflow_runs_path)
+
+            # Get duration of each workflow run, aggregate across all proj workflows
+            workflow_durations = build_workflow_durations(workflow_runs)
+            project_workflow_durations.extend(workflow_durations)
+
+        workflow_durations_by_proj[repo_id_str] = project_workflow_durations
+
+    # Determine how many projects had at least one build (run) that took longer than threshold
+    count_projects_exceeding_thresh(
+        workflow_durations_by_proj, duration_thresh_timedelta)
+
+    # Produce boxplot for each language group, plotting build duration per member count size
+    build_boxplots_by_size_for_langs(
+        projects,
+        workflow_durations_by_proj,
+        plot_build_duration_boxplots,
+        build_duration_img_prefix,
+        'minutes'
+    )
+
+    print('[!] Done analyzing build duration')
