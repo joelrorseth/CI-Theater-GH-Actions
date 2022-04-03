@@ -1,19 +1,70 @@
-from ctypes import Union
 import numpy as np
 from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Tuple
-from config import MEMBER_COUNT_SIZES, SUPPORTED_LANGUAGE_GROUPS, SUPPORTED_LANGUAGE_GROUPS_FILENAME_MAP, SUPPORTED_LANGUAGE_GROUPS_MAP
 from coverage import load_coverage
 from data_io import write_series_to_json_file
 from github_api_client import convert_str_to_datetime
-from plot import BoxplotterSignature, plot_broken_builds_boxplots, plot_build_duration_boxplots, plot_code_coverage_boxplots, plot_project_member_counts_histogram
-from projects import Projects, get_member_count_sizes_for_projects, load_full_projects, load_original_project_members, load_projects
-from workflows import WorkflowRuns, encode_workflow_runs_path, load_workflow_runs, load_workflows
+from config import (
+    MEMBER_COUNT_SIZES,
+    SUPPORTED_LANGUAGE_GROUPS,
+    SUPPORTED_LANGUAGE_GROUPS_FILENAME_MAP,
+    SUPPORTED_LANGUAGE_GROUPS_MAP
+)
+from plot import (
+    BoxplotterSignature,
+    plot_broken_builds_boxplots,
+    plot_build_duration_boxplots,
+    plot_code_coverage_boxplots,
+    plot_project_member_counts_histogram
+)
+from projects import (
+    Projects,
+    get_member_count_sizes_for_projects,
+    load_full_projects,
+    load_original_project_members,
+    load_projects
+)
+from workflows import (
+    WorkflowRuns,
+    encode_workflow_runs_path,
+    load_workflow_runs,
+    load_workflows
+)
 
 
 TimedeltaList = List[timedelta]
 TimedeltasByProject = Dict[str, TimedeltaList]
+
+
+def print_timedelta_stats(timedeltas: TimedeltaList, language: str = 'All') -> None:
+    delta_avg = sum(timedeltas, timedelta(0)) / len(timedeltas)
+    delta_third_quar = np.quantile(timedeltas, 0.75)
+    delta_median = np.median(timedeltas)
+    delta_std_dev = np.std(timedeltas)
+    print(f"Timedelta stats for {language} projects:")
+    print(f"\tAverage: {delta_avg}")
+    print(f"\tMedian: {delta_median}")
+    print(f"\t3rd Quartile: {delta_third_quar}")
+    print(f"\tStd Dev: {delta_std_dev}")
+
+
+def print_timedelta_stats_for_all_langs(unencoded_projects: Projects,
+                                        timedeltas_by_proj: TimedeltasByProject) -> None:
+    # Print stats about all projects in general
+    print_timedelta_stats(
+        [item for sublist in timedeltas_by_proj.values() for item in sublist],
+        'All'
+    )
+
+    # Print stats for each language groups
+    for language_group in SUPPORTED_LANGUAGE_GROUPS:
+        lang_timedeltas = [
+            timedeltas_by_proj[p['id']]
+            for p in unencoded_projects
+            if SUPPORTED_LANGUAGE_GROUPS_MAP[p['language']] == language_group
+        ]
+        print_timedelta_stats(lang_timedeltas, language_group)
 
 
 def count_projects_exceeding_thresh(timedeltas_by_proj: TimedeltasByProject,
@@ -285,11 +336,12 @@ def analyze_broken_build_duration(projects_path: str, workflows_path: str,
         # Add all workflows' failure timedeltas to the project-level failures dict
         failure_timedeltas[repo_id_str] = project_failure_timedeltas
 
-    all_timedeltas = [item for sublist in failure_timedeltas.values()
-                      for item in sublist]
-    #average_timedelta = sum(all_timedeltas, timedelta(0)) / len(all_timedeltas)
+    # Print timedelta stats
+    print_timedelta_stats_for_all_langs(projects, failure_timedeltas)
 
     # The third quartile of the overall duration of broken builds is the acceptable threshold
+    all_timedeltas = [item for sublist in failure_timedeltas.values()
+                      for item in sublist]
     failure_thresh = np.quantile(all_timedeltas, 0.75)
     print(
         f"The broken build duration threshold (3rd quartile) is {failure_thresh}")
@@ -365,6 +417,9 @@ def analyze_build_duration(projects_path: str, workflows_path: str,
             project_workflow_durations.extend(workflow_durations)
 
         workflow_durations_by_proj[repo_id_str] = project_workflow_durations
+
+    # Print timedelta stats
+    print_timedelta_stats_for_all_langs(projects, workflow_durations_by_proj)
 
     # Determine how many projects had at least one build (run) that took longer than threshold
     count_projects_exceeding_thresh(
