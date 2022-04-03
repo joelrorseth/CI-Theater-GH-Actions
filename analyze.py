@@ -2,11 +2,12 @@ import numpy as np
 from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Tuple
+from config import MEMBER_COUNT_SIZES, SUPPORTED_LANGUAGE_GROUPS, SUPPORTED_LANGUAGE_GROUPS_FILENAME_MAP, SUPPORTED_LANGUAGE_GROUPS_MAP
 from coverage import load_coverage
 from data_io import write_series_to_json_file
 from github_api_client import convert_str_to_datetime
-from plot import plot_code_coverage_boxplots, plot_project_member_counts_histogram
-from projects import load_full_projects, load_original_project_members, load_projects
+from plot import plot_broken_builds_boxplots, plot_code_coverage_boxplots, plot_project_member_counts_histogram
+from projects import get_member_count_sizes_for_projects, load_full_projects, load_original_project_members, load_projects
 from workflows import WorkflowRuns, encode_workflow_runs_path, load_workflow_runs, load_workflows
 
 
@@ -139,7 +140,7 @@ def analyze_coverage(coverage_path: str, coverage_boxplot_img_path: str) -> None
 
 
 def analyze_broken_build_duration(projects_path: str, workflows_path: str,
-                                  workflow_runs_prefix: str) -> None:
+                                  workflow_runs_prefix: str, broken_builds_img_prefix: str) -> None:
     """
     RQ3: How common is allowing the build to stay broken for long periods?
     To answer this RQ, ...
@@ -255,5 +256,28 @@ def analyze_broken_build_duration(projects_path: str, workflows_path: str,
     exceed_perc = f"({(projects_exceeding_thresh/len(failure_timedeltas))*100:.2f}%)"
     print(f"{exceed_ratio} {exceed_perc} projects have >= 1 builds exceeding {failure_thresh}")
 
-    # TODO:
+    # Produce boxplot for each language group, plotting # days broken per member count size
+    member_count_sizes = get_member_count_sizes_for_projects(projects)
+    for language_group in SUPPORTED_LANGUAGE_GROUPS:
+        data_per_size = {}
+        for size in MEMBER_COUNT_SIZES:
+            projects_for_lang_size = [
+                failure_timedeltas[p['id']]
+                for p in projects
+                if (
+                    SUPPORTED_LANGUAGE_GROUPS_MAP[p['language']] == language_group and
+                    member_count_sizes[p['id']] == size
+                )
+            ]
+            timedeltas_hrs_for_lang_size = [
+                td.seconds//3600 for proj_tds in projects_for_lang_size for td in proj_tds]
+            data_per_size[size] = timedeltas_hrs_for_lang_size
+
+        # Produce boxplot for this language group / member count size combo
+        plot_broken_builds_boxplots(
+            language_group,
+            data_per_size,
+            f"{broken_builds_img_prefix}_{SUPPORTED_LANGUAGE_GROUPS_FILENAME_MAP[language_group]}"
+        )
+
     print('[!] Done analyzing broken build duration')

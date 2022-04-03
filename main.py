@@ -40,6 +40,7 @@ ORIGINAL_PROJECTS_MEMBER_DIST_JSON_PATH = f"{RESULTS_FOLDER}/original_projects_m
 FINAL_PROJECTS_MEMBER_DIST_IMG_PATH = f"{RESULTS_FOLDER}/final_projects_member_dist.png"
 FINAL_PROJECTS_MEMBER_DIST_JSON_PATH = f"{RESULTS_FOLDER}/final_projects_member_dist.json"
 PROJECT_COVERAGE_BY_LANG_IMG_PATH = f"{RESULTS_FOLDER}/project_coverage_by_language.png"
+BROKEN_BUILDS_IMG_PREFIX = f"{RESULTS_FOLDER}/broken_builds"
 
 
 if __name__ == '__main__':
@@ -87,7 +88,7 @@ if __name__ == '__main__':
     analyze_coverage(LANGUAGE_COVERAGE_PATH, PROJECT_COVERAGE_BY_LANG_IMG_PATH)
     analyze_commit_frequency(PROJECTS_STAGE_6_PATH,
                              WORKFLOWS_STAGE_6_PATH, WORKFLOW_RUNS_PREFIX)
-    analyze_broken_build_duration(PROJECTS_STAGE_6_PATH,
-                                  WORKFLOWS_STAGE_6_PATH, WORKFLOW_RUNS_PREFIX)
+    analyze_broken_build_duration(PROJECTS_STAGE_6_PATH, WORKFLOWS_STAGE_6_PATH,
+                                  WORKFLOW_RUNS_PREFIX, BROKEN_BUILDS_IMG_PREFIX)
 
     print('Done')

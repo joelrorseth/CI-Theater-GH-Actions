@@ -26,6 +26,7 @@ def plot_boxplots(data: Dict[str, List[Any]], title: str, xlabel: str, ylabel: s
     # plt.show()
     if output_filename is not None:
         plt.savefig(output_filename)
+        print(f"Wrote boxplot to {output_filename}")
         plt.clf()
 
 

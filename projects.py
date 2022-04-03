@@ -2,7 +2,7 @@ import os
 import pandas as pd
 import numpy as np
 from typing import Dict, List, Tuple
-from config import MEMBER_COUNT_SIZES
+from config import MEMBER_COUNT_SIZES_MAP
 from data_io import read_df_from_csv_file, write_df_to_csv_file
 
 GHTORRENT_PATH = os.environ['ghtorrent_path']
@@ -93,12 +93,12 @@ def get_member_count_sizes_for_projects(unencoded_projects: Projects) -> Dict[st
     ```
     """
     def get_size_for_num_members(num_members: int) -> str:
-        for size, size_range in MEMBER_COUNT_SIZES:
+        for size, size_range in MEMBER_COUNT_SIZES_MAP:
             if num_members >= size_range[0] and num_members <= size_range[1]:
                 return size
         return 'Unknown'
 
-    project_members_df = load_original_project_members()
+    project_members_df = load_original_project_members(True)
     member_counts = project_members_df['repo_id'].value_counts()
     target_repo_ids = set([proj['id'] for proj in unencoded_projects])
     sizes_map = {}
