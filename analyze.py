@@ -241,8 +241,19 @@ def analyze_broken_build_duration(projects_path: str, workflows_path: str,
     #average_timedelta = sum(all_timedeltas, timedelta(0)) / len(all_timedeltas)
 
     # The third quartile of the overall duration of broken builds is the acceptable threshold
-    failure_thresh_timedelta = np.quantile(all_timedeltas, 0.75)
-    print(f"The broken build duration threshold (3rd quartile) is {failure_thresh_timedelta}")
+    failure_thresh = np.quantile(all_timedeltas, 0.75)
+    print(
+        f"The broken build duration threshold (3rd quartile) is {failure_thresh}")
+
+    # Determine how many projects had at least one build (run) that took longer than threshold
+    projects_exceeding_thresh = 0
+    for repo_id_str, deltas in failure_timedeltas:
+        if any([delta > failure_thresh for delta in deltas]):
+            projects_exceeding_thresh += 1
+
+    exceed_ratio = f"{projects_exceeding_thresh}/{len(failure_timedeltas)}"
+    exceed_perc = f"({(projects_exceeding_thresh/len(failure_timedeltas))*100:.2f}%)"
+    print(f"{exceed_ratio} {exceed_perc} projects have >= 1 builds exceeding {failure_thresh}")
 
     # TODO:
     print('[!] Done analyzing broken build duration')
