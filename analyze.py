@@ -247,7 +247,7 @@ def analyze_broken_build_duration(projects_path: str, workflows_path: str,
 
     # Determine how many projects had at least one build (run) that took longer than threshold
     projects_exceeding_thresh = 0
-    for repo_id_str, deltas in failure_timedeltas:
+    for repo_id_str, deltas in failure_timedeltas.items():
         if any([delta > failure_thresh for delta in deltas]):
             projects_exceeding_thresh += 1
 

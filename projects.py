@@ -2,6 +2,7 @@ import os
 import pandas as pd
 import numpy as np
 from typing import Dict, List, Tuple
+from config import MEMBER_COUNT_SIZES
 from data_io import read_df_from_csv_file, write_df_to_csv_file
 
 GHTORRENT_PATH = os.environ['ghtorrent_path']
@@ -10,6 +11,9 @@ PROJECT_COLS = ['repo_id', 'url', 'owner_id', 'name', 'descriptor',
                 'language', 'created_at', 'forked_from', 'deleted', 'updated_at', 'dummy']
 PROJECT_MEMBERS_COLS = ['repo_id', 'user_id', 'created_at']
 NULL_SYMBOL = "\\N"
+
+Projects = List[Dict[str, str]]
+PartitionedProjects = List[Projects]
 
 
 def encode_repo_key(repo_id: str) -> str:
@@ -54,12 +58,13 @@ def decode_repo_and_workflow_key(graphql_key: str) -> Tuple[str, int]:
     return str(repo_id), int(workflow_idx)
 
 
-def load_original_project_members() -> pd.DataFrame:
+def load_original_project_members(quiet: bool = False) -> pd.DataFrame:
     """
     Read GHTorrent GitHub project member associations into a `pd.DataFrame`. Note that all
     original columns are maintained ('repo_id', 'user_id', and 'created_at').
     """
-    print('Loading project-member associations...')
+    if not quiet:
+        print('Loading project-member associations...')
     project_members_df = read_df_from_csv_file(
         PROJECT_MEMBERS_PATH, PROJECT_MEMBERS_COLS)
 
@@ -69,9 +74,43 @@ def load_original_project_members() -> pd.DataFrame:
 
     num_associations = project_members_df.shape[0]
     num_projects = project_members_df['repo_id'].nunique()
-    print(
-        f"Loaded {num_associations} unique member associations to {num_projects} projects")
+    if not quiet:
+        print(
+            f"Loaded {num_associations} unique member associations to {num_projects} projects")
     return project_members_df
+
+
+def get_member_count_sizes_for_projects(unencoded_projects: Projects) -> Dict[str, str]:
+    """
+    Get a dict mapping specified project ids to the corresponding member count size category.
+    Input projects must have unencoded 'repo_id'. Example return value:
+    ```
+    {
+        '123': 'Very Small',
+        '456': 'Medium',
+        ...
+    }
+    ```
+    """
+    def get_size_for_num_members(num_members: int) -> str:
+        for size, size_range in MEMBER_COUNT_SIZES:
+            if num_members >= size_range[0] and num_members <= size_range[1]:
+                return size
+        return 'Unknown'
+
+    project_members_df = load_original_project_members()
+    member_counts = project_members_df['repo_id'].value_counts()
+    target_repo_ids = set([proj['id'] for proj in unencoded_projects])
+    sizes_map = {}
+
+    # Extract member count for specified projects, bin these numbers into size categories
+    for idx, repo_id in enumerate(member_counts.index.tolist()):
+        repo_id_str = str(repo_id)
+        num_members = member_counts[idx]
+        if repo_id_str in target_repo_ids:
+            sizes_map[repo_id_str] = get_size_for_num_members(num_members)
+
+    return sizes_map
 
 
 def load_full_projects(input_projects_path: str, quiet: bool = False) -> pd.DataFrame:
@@ -94,7 +133,7 @@ def save_full_projects_df(projects_df: pd.DataFrame, output_projects_path: str) 
 
 
 def load_projects(input_projects_path: str,
-                  should_encode_repo_key: bool = True) -> List[Dict[str, str]]:
+                  should_encode_repo_key: bool = True) -> Projects:
     """
     Read GitHub projects from the specified CSV file (ie. in GHTorrent format) into a list of
     dictionaries. Note that only certain columns are retained from the CSV. Example return value:
@@ -123,7 +162,7 @@ def load_projects(input_projects_path: str,
 
 
 def load_projects_and_partition(input_projects_path: str, num_partitions: int,
-                                should_encode_repo_key: bool = True) -> List[List[Dict[str, str]]]:
+                                should_encode_repo_key: bool = True) -> PartitionedProjects:
     """
     Read GitHub projects from the specified CSV file (ie. in GHTorrent format) into a list of
     dictionaries, then partition the dictionaries to form a list of lists of dictionaries.
