@@ -32,6 +32,21 @@ def plot_boxplots(data: Dict[str, List[Any]], title: str, xlabel: str, ylabel: s
         plt.clf()
 
 
+def plot_daily_commits_boxplots(language: str, data: Dict[str, List[Any]],
+                                output_filename: OutputFile) -> None:
+    """
+    Build a figure containing multiple boxplots, one for each member count size category. Each
+    boxplot corresponds to an entry in the specified `data` dict, where each key is a member
+    count size category, and the associated list of values are the average # daily commits (for
+    each project in that size category). Example `data` dict:
+    ```
+    {'Very Small': [2.0,4.5,6.0], 'Small': [1.0,1.5,8.0,0.9,1.7], ...}
+    ```
+    """
+    plot_boxplots(data, f"{language} Projects", 'Project Member Count Size',
+                  'Average # Daily Commits', output_filename, show_outliers=False)
+
+
 def plot_code_coverage_boxplots(coverage: Dict[str, List[Any]], output_filename: OutputFile) -> None:
     """
     Build a figure containing multiple boxplots, one for the code coverage of each different
