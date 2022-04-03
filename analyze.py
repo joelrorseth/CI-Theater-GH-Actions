@@ -202,13 +202,14 @@ def analyze_broken_build_duration(projects_path: str, workflows_path: str,
                     fail_start_conclusion = conclusion_obj
 
             prev_conclusion = conclusion_obj
+        return failure_timedeltas
 
     print('[!] Analyzing broken build duration')
 
     projects = load_projects(projects_path, False)
     workflows_dict = load_workflows(workflows_path)
 
-    project_failure_timedeltas: ProjectFailureTimedeltas = defaultdict(list)
+    failure_timedeltas: ProjectFailureTimedeltas = defaultdict(list)
 
     # Iterate through each workflow for each project
     for project in projects:
@@ -233,20 +234,15 @@ def analyze_broken_build_duration(projects_path: str, workflows_path: str,
             project_failure_timedeltas.extend(workflow_failure_timedeltas)
 
         # Add all workflows' failure timedeltas to the project-level failures dict
-        project_failure_timedeltas[repo_id_str] = project_failure_timedeltas
+        failure_timedeltas[repo_id_str] = project_failure_timedeltas
 
-    all_timedeltas = [item for sublist in project_failure_timedeltas.values()
+    all_timedeltas = [item for sublist in failure_timedeltas.values()
                       for item in sublist]
-    average_timedelta = sum(all_timedeltas, timedelta(0)) / len(all_timedeltas)
+    #average_timedelta = sum(all_timedeltas, timedelta(0)) / len(all_timedeltas)
 
     # The third quartile of the overall duration of broken builds is the acceptable threshold
     failure_thresh_timedelta = np.quantile(all_timedeltas, 0.75)
-
-    print("Average timedelta:")
-    print(average_timedelta)
-
-    print("3rd quartile timedelta:")
-    print(failure_thresh_timedelta)
+    print(f"The broken build duration threshold (3rd quartile) is {failure_thresh_timedelta}")
 
     # TODO:
     print('[!] Done analyzing broken build duration')
