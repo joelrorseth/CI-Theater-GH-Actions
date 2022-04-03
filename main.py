@@ -40,6 +40,7 @@ ORIGINAL_PROJECTS_MEMBER_DIST_IMG_PATH = f"{RESULTS_FOLDER}/original_projects_me
 ORIGINAL_PROJECTS_MEMBER_DIST_JSON_PATH = f"{RESULTS_FOLDER}/original_projects_member_dist.json"
 FINAL_PROJECTS_MEMBER_DIST_IMG_PATH = f"{RESULTS_FOLDER}/final_projects_member_dist.png"
 FINAL_PROJECTS_MEMBER_DIST_JSON_PATH = f"{RESULTS_FOLDER}/final_projects_member_dist.json"
+DAILY_COMMITS_IMG_PREFIX = f"{RESULTS_FOLDER}/daily_commits"
 PROJECT_COVERAGE_BY_LANG_IMG_PATH = f"{RESULTS_FOLDER}/project_coverage_by_language.png"
 BROKEN_BUILDS_IMG_PREFIX = f"{RESULTS_FOLDER}/broken_builds"
 BUILD_DURATION_IMG_PREFIX = f"{RESULTS_FOLDER}/build_duration"
@@ -87,8 +88,8 @@ if __name__ == '__main__':
         FINAL_PROJECTS_MEMBER_DIST_JSON_PATH
     )
     analyze_coverage(LANGUAGE_COVERAGE_PATH, PROJECT_COVERAGE_BY_LANG_IMG_PATH)
-    analyze_commit_frequency(PROJECTS_STAGE_6_PATH,
-                             WORKFLOWS_STAGE_6_PATH, WORKFLOW_RUNS_PREFIX)
+    analyze_commit_frequency(PROJECTS_STAGE_6_PATH, WORKFLOWS_STAGE_6_PATH,
+                             WORKFLOW_RUNS_PREFIX, DAILY_COMMITS_IMG_PREFIX)
     analyze_broken_build_duration(PROJECTS_STAGE_6_PATH, WORKFLOWS_STAGE_6_PATH,
                                   WORKFLOW_RUNS_PREFIX, BROKEN_BUILDS_IMG_PREFIX)
     analyze_build_duration(PROJECTS_STAGE_6_PATH, WORKFLOWS_STAGE_6_PATH,

@@ -16,6 +16,7 @@ from plot import (
     plot_broken_builds_boxplots,
     plot_build_duration_boxplots,
     plot_code_coverage_boxplots,
+    plot_daily_commits_boxplots,
     plot_project_member_counts_histogram
 )
 from projects import (
@@ -37,7 +38,11 @@ TimedeltaList = List[timedelta]
 TimedeltasByProject = Dict[str, TimedeltaList]
 
 
-def print_timedelta_stats(subject:str, timedeltas: TimedeltaList, language: str = 'All') -> None:
+def flatten_list(my_list: List[List[Any]]) -> List[Any]:
+    [item for sublist in my_list for item in sublist]
+
+
+def print_timedelta_stats(subject: str, timedeltas: TimedeltaList, language: str = 'All') -> None:
     timedeltas_in_secs = [td.total_seconds() for td in timedeltas]
     delta_avg = sum(timedeltas, timedelta(0)) / len(timedeltas)
     delta_quantile_50 = np.quantile(timedeltas, 0.50)
@@ -58,12 +63,12 @@ def print_timedelta_stats(subject:str, timedeltas: TimedeltaList, language: str 
     print()
 
 
-def print_timedelta_stats_for_all_langs(subject:str, unencoded_projects: Projects,
+def print_timedelta_stats_for_all_langs(subject: str, unencoded_projects: Projects,
                                         timedeltas_by_proj: TimedeltasByProject) -> None:
     # Print stats about all projects in general
     print_timedelta_stats(
         subject,
-        [item for sublist in timedeltas_by_proj.values() for item in sublist],
+        flatten_list(timedeltas_by_proj.values()),
         'All'
     )
 
@@ -74,7 +79,7 @@ def print_timedelta_stats_for_all_langs(subject:str, unencoded_projects: Project
             for p in unencoded_projects
             if SUPPORTED_LANGUAGE_GROUPS_MAP[p['language']] == language_group
         ]
-        lang_timedeltas = [item for sublist in lang_timedeltas for item in sublist]
+        lang_timedeltas = flatten_list(lang_timedeltas)
         print_timedelta_stats(subject, lang_timedeltas, language_group)
 
 
@@ -90,36 +95,62 @@ def count_projects_exceeding_thresh(timedeltas_by_proj: TimedeltasByProject,
     print(f"{exceed_ratio} {exceed_perc} projects have >= 1 builds exceeding {timedelta_thresh}")
 
 
+def convert_timedeltas_to_ints(timedelta_list: TimedeltaList,
+                               units: str = 'hours') -> List[int]:
+    denom = 1
+    if units == 'hours':
+        denom = 3600
+    if units == 'minutes':
+        denom = 60
+    return [td.seconds//denom for td in timedelta_list]
+
+
 def build_boxplots_by_size_for_langs(unencoded_projects: Projects,
-                                     timedeltas_by_proj: TimedeltasByProject,
+                                     values_per_proj: Dict[str, List[int]],
                                      boxplotter: BoxplotterSignature,
-                                     img_prefix: str,
-                                     units: str = 'hours') -> None:
+                                     img_prefix: str) -> None:
     member_count_sizes = get_member_count_sizes_for_projects(
         unencoded_projects)
     for language_group in SUPPORTED_LANGUAGE_GROUPS:
         data_per_size = {}
         for size in MEMBER_COUNT_SIZES:
             projects_for_lang_size = [
-                timedeltas_by_proj[p['id']]
+                values_per_proj[p['id']]
                 for p in unencoded_projects
                 if (
                     SUPPORTED_LANGUAGE_GROUPS_MAP[p['language']] == language_group and
                     member_count_sizes[p['id']] == size
                 )
             ]
-            denom = 1
-            if units == 'hours':
-                denom = 3600
-            if units == 'minutes':
-                denom = 60
-            timedeltas_for_lang_size = [
-                td.seconds//denom for proj_tds in projects_for_lang_size for td in proj_tds]
-            data_per_size[size] = timedeltas_for_lang_size
+            data_per_size[size] = flatten_list(projects_for_lang_size)
 
         # Produce boxplot for this language group / member count size combo
         boxplotter(language_group, data_per_size,
                    f"{img_prefix}_{SUPPORTED_LANGUAGE_GROUPS_FILENAME_MAP[language_group]}.png")
+
+
+def build_timedelta_boxplots_by_size_for_langs(unencoded_projects: Projects,
+                                               timedeltas_by_proj: TimedeltasByProject,
+                                               boxplotter: BoxplotterSignature,
+                                               img_prefix: str,
+                                               units: str = 'hours') -> None:
+    build_boxplots_by_size_for_langs(
+        unencoded_projects,
+        {repo_id: convert_timedeltas_to_ints(timedeltas, units)
+         for repo_id, timedeltas in timedeltas_by_proj.items()},
+        boxplotter,
+        img_prefix)
+
+
+def build_repo_val_boxplots_by_size_for_langs(unencoded_projects: Projects,
+                                              value_per_proj: Dict[str, Any],
+                                              boxplotter: BoxplotterSignature,
+                                              img_prefix: str) -> None:
+    build_boxplots_by_size_for_langs(
+        unencoded_projects,
+        {repo_id: [val] for repo_id, val in value_per_proj.items()},
+        boxplotter,
+        img_prefix)
 
 
 def analyze_project_member_count(projects_path: str,
@@ -153,7 +184,7 @@ def analyze_project_member_count(projects_path: str,
 
 
 def analyze_commit_frequency(projects_path: str, workflows_path: str,
-                             workflow_runs_prefix: str) -> None:
+                             workflow_runs_prefix: str, daily_commits_img_prefix: str) -> None:
     """
     RQ1: How common is running CI in the master branch but with infrequent commits?
     To answer this RQ, ...
@@ -233,7 +264,14 @@ def analyze_commit_frequency(projects_path: str, workflows_path: str,
     print(f"{num_frequent}/{num_valid_proj} ({(num_frequent/num_valid_proj)*100:.2f}%) projects commit frequently")
     print(f"{num_infrequent}/{num_valid_proj} ({(num_infrequent/num_valid_proj)*100:.2f}%) projects commit infrequently")
 
-    # TODO: Plot # commits vs project size, for each language
+    # Produce boxplot for each language group, plotting avg # daily commits per member count size
+    build_repo_val_boxplots_by_size_for_langs(
+        projects,
+        avg_daily_commits_by_proj,
+        plot_daily_commits_boxplots,
+        daily_commits_img_prefix
+    )
+
     print("[!] Done analyzing project commit frequency")
 
 
@@ -301,7 +339,7 @@ def analyze_broken_build_duration(projects_path: str, workflows_path: str,
                     if fail_start_datetime < fail_end_datetime:
                         failure_timedeltas.append(
                             fail_end_datetime - fail_start_datetime)
-                    #else:
+                    # else:
                     #    print(
                     #        'WARNING: Failure start timestamp >= end timestamp, skipping...')
 
@@ -348,11 +386,11 @@ def analyze_broken_build_duration(projects_path: str, workflows_path: str,
         failure_timedeltas[repo_id_str] = project_failure_timedeltas
 
     # Print timedelta stats
-    print_timedelta_stats_for_all_langs('Broken build duration', projects, failure_timedeltas)
+    print_timedelta_stats_for_all_langs(
+        'Broken build duration', projects, failure_timedeltas)
 
     # The third quartile of the overall duration of broken builds is the acceptable threshold
-    all_timedeltas = [item for sublist in failure_timedeltas.values()
-                      for item in sublist]
+    all_timedeltas = flatten_list(failure_timedeltas.values())
     failure_thresh = np.quantile(all_timedeltas, 0.75)
     print(
         f"The broken build duration threshold (3rd quartile) is {failure_thresh}")
@@ -361,7 +399,7 @@ def analyze_broken_build_duration(projects_path: str, workflows_path: str,
     count_projects_exceeding_thresh(failure_timedeltas, failure_thresh)
 
     # Produce boxplot for each language group, plotting # days broken per member count size
-    build_boxplots_by_size_for_langs(
+    build_timedelta_boxplots_by_size_for_langs(
         projects,
         failure_timedeltas,
         plot_broken_builds_boxplots,
@@ -395,7 +433,7 @@ def analyze_build_duration(projects_path: str, workflows_path: str,
                     run_end = convert_str_to_datetime(run['updated_at'])
                     if run_start < run_end:
                         workflow_durations.append(run_end - run_start)
-                    #else:
+                    # else:
                     #    print('WARNING: Run start time >= end time, skipping...')
             else:
                 print('WARNING: Incomplete commit, skipping...')
@@ -430,14 +468,15 @@ def analyze_build_duration(projects_path: str, workflows_path: str,
         workflow_durations_by_proj[repo_id_str] = project_workflow_durations
 
     # Print timedelta stats
-    print_timedelta_stats_for_all_langs('Build duration', projects, workflow_durations_by_proj)
+    print_timedelta_stats_for_all_langs(
+        'Build duration', projects, workflow_durations_by_proj)
 
     # Determine how many projects had at least one build (run) that took longer than threshold
     count_projects_exceeding_thresh(
         workflow_durations_by_proj, duration_thresh_timedelta)
 
     # Produce boxplot for each language group, plotting build duration per member count size
-    build_boxplots_by_size_for_langs(
+    build_timedelta_boxplots_by_size_for_langs(
         projects,
         workflow_durations_by_proj,
         plot_build_duration_boxplots,
