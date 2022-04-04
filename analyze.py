@@ -253,7 +253,7 @@ def analyze_commit_frequency(projects_path: str, workflows_path: str,
     avg_daily_commit_rate = sum(
         avg_daily_commits_by_proj.values()) / len(avg_daily_commits_by_proj)
     print(
-        f"The frequent commit threshold (avergae daily commit rate) is {avg_daily_commit_rate:.2f}")
+        f"The frequent commit threshold (average daily commit rate) is {avg_daily_commit_rate:.2f}")
 
     # Sort out frequent vs. infrequent projects by comparing against average daily commit rate
     valid_project_is_frequent = {
@@ -285,8 +285,21 @@ def analyze_coverage(coverage_path: str, coverage_boxplot_img_path: str) -> None
     language.
     """
     print('[!] Analyzing project code coverage by language')
-    coverage_by_lang = load_coverage(coverage_path)
-    plot_code_coverage_boxplots(coverage_by_lang, coverage_boxplot_img_path)
+    coverage_by_lang_group = load_coverage(coverage_path)
+    plot_code_coverage_boxplots(
+        coverage_by_lang_group, coverage_boxplot_img_path)
+
+    # Calculate average coverage over all projects
+    all_proj_avg_cov = flatten_list(coverage_by_lang_group.values())
+    all_proj_avg_cov = sum(all_proj_avg_cov) / len(all_proj_avg_cov)
+    print(f"Average overall project coverage is {all_proj_avg_cov:.2f}%")
+
+    # Calculate average coverage for projects in each language group
+    for language_group, coverage_amounts in coverage_by_lang_group.items():
+        langage_group_avg_cov = sum(coverage_amounts) / len(coverage_amounts)
+        print(
+            f"Average {language_group} project coverage is {langage_group_avg_cov:.2f}%")
+
     print('[!] Done analyzing project code coverage')
 
 
