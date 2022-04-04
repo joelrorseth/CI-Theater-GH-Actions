@@ -250,12 +250,14 @@ def analyze_commit_frequency(projects_path: str, workflows_path: str,
         f"{num_valid_proj}/{len(projects)} projects have >= 1 full day of commit history")
 
     # Calculate average daily commit rate across all projects (some projects may be ignored)
-    average_daily_commit_rate = sum(
+    avg_daily_commit_rate = sum(
         avg_daily_commits_by_proj.values()) / len(avg_daily_commits_by_proj)
+    print(
+        f"The frequent commit threshold (avergae daily commit rate) is {avg_daily_commit_rate}")
 
     # Sort out frequent vs. infrequent projects by comparing against average daily commit rate
     valid_project_is_frequent = {
-        repo_id: avg_daily_commits_by_proj[repo_id] >= average_daily_commit_rate
+        repo_id: avg_daily_commits_by_proj[repo_id] >= avg_daily_commit_rate
         for repo_id in valid_repo_id_strs
     }
     num_frequent = len([f for f in valid_project_is_frequent.values() if f])
