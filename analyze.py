@@ -297,11 +297,12 @@ def analyze_coverage(coverage_path: str, coverage_boxplot_img_path: str) -> None
 
     def print_stats(coverages, language):
         print(f"Project test coverage stats for {language} projects:")
-        
+
         if len(coverages) == 0:
             print("\tNo test coverages reported!")
         elif len(coverages) == 1:
-            print(f"\tOnly 1 reported test coverage with value {coverages[0]:.2f}%")
+            print(
+                f"\tOnly 1 reported test coverage with value {coverages[0]:.2f}%")
         else:
             coverages_mean = statistics.mean(coverages)
             coverages_median = statistics.median(coverages)
@@ -312,7 +313,6 @@ def analyze_coverage(coverage_path: str, coverage_boxplot_img_path: str) -> None
             print(f"\tMin: {min(coverages):.2f}%")
             print(f"\tMax: {max(coverages):.2f}%")
             print(f"\tStd Dev: {coverages_std:.2f}%")
-
 
     print('[!] Analyzing project code coverage by language')
     coverage_by_lang_group = load_coverage(coverage_path)
@@ -334,7 +334,14 @@ def analyze_broken_build_duration(projects_path: str, workflows_path: str,
                                   workflow_runs_prefix: str, broken_builds_img_prefix: str) -> None:
     """
     RQ3: How common is allowing the build to stay broken for long periods?
-    To answer this RQ, ...
+    To answer this RQ, we first extract the conclusion (eg. success, failure) and
+    timestamp for each workflow run in each project. We then create a timeline of
+    timedeltas for the workflow, to capture the elapsed time during periods of
+    unsuccessful runs. We consider timedeltas across all workflows, and track all
+    timedeltas per project. A threshold is determined using the 3rd quartile
+    timedelta across all projects. We find the proportion of projects having >= 1
+    build exceeding this threshold, then plot timedeltas by langauge group and
+    project size.
     """
 
     ConclusionsTimeline = List[Tuple[datetime, Dict[str, Any]]]
