@@ -339,8 +339,8 @@ def analyze_broken_build_duration(projects_path: str, workflows_path: str,
     timedeltas for the workflow, to capture the elapsed time during periods of
     unsuccessful runs. We consider timedeltas across all workflows, and track all
     timedeltas per project. A threshold is determined using the 3rd quartile
-    timedelta across all projects. We find the proportion of projects having >= 1
-    build exceeding this threshold, then plot timedeltas by langauge group and
+    timedelta across all projects. We calculate the proportion of projects having
+    >= 1 run exceeding this threshold, then plot timedeltas by langauge group and
     project size.
     """
 
@@ -462,9 +462,12 @@ def analyze_broken_build_duration(projects_path: str, workflows_path: str,
 def analyze_build_duration(projects_path: str, workflows_path: str,
                            workflow_runs_prefix: str, build_duration_img_prefix: str) -> None:
     """
-    RQ4: How common are long running builds? In order to provide quick feedback, builds should
-    be executed in under 10 minutes.
-    To answer this RQ, ...
+    RQ4: How common are long running builds?
+    In order to provide quick feedback, builds should be executed in under 10 minutes.
+    To answer this RQ, we extract and aggregate the duration of each workflow run across
+    all workflows, for each project. We then calculate the proportion of projects having
+    >= 1 run exceeding 10 minutes. In addition, we produce statistics and plots across
+    all projects, as well as when grouped by programming language and project size.
     """
 
     def build_workflow_durations(workflow_runs: WorkflowRuns) -> TimedeltaList:
