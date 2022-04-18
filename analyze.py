@@ -296,17 +296,23 @@ def analyze_coverage(coverage_path: str, coverage_boxplot_img_path: str) -> None
     """
 
     def print_stats(coverages, language):
-        coverages_mean = statistics.mean(coverages)
-        coverages_median = statistics.median(coverages)
-        coverages_std = statistics.stdev(coverages)
-
         print(f"Project test coverage stats for {language} projects:")
-        print(f"\tCount: {len(coverages)}")
-        print(f"\tAverage: {coverages_mean:.2f}%")
-        print(f"\tMedian: {coverages_median:.2f}%")
-        print(f"\tMin: {max(coverages)}")
-        print(f"\tMax: {min(coverages)}")
-        print(f"\tStd Dev: {coverages_std:.2f}%")
+        
+        if len(coverages) == 0:
+            print("\tNo test coverages reported!")
+        elif len(coverages) == 1:
+            print(f"\tOnly 1 reported test coverage with value {coverages[0]:.2f}%")
+        else:
+            coverages_mean = statistics.mean(coverages)
+            coverages_median = statistics.median(coverages)
+            coverages_std = statistics.stdev(coverages)
+            print(f"\tCount: {len(coverages)}")
+            print(f"\tAverage: {coverages_mean:.2f}%")
+            print(f"\tMedian: {coverages_median:.2f}%")
+            print(f"\tMin: {min(coverages):.2f}%")
+            print(f"\tMax: {max(coverages):.2f}%")
+            print(f"\tStd Dev: {coverages_std:.2f}%")
+
 
     print('[!] Analyzing project code coverage by language')
     coverage_by_lang_group = load_coverage(coverage_path)
