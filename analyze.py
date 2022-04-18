@@ -187,7 +187,14 @@ def analyze_commit_frequency(projects_path: str, workflows_path: str,
                              workflow_runs_prefix: str, daily_commits_img_prefix: str) -> None:
     """
     RQ1: How common is running CI in the master branch but with infrequent commits?
-    To answer this RQ, ...
+    To answer this RQ, we build a timeline of commits for each project, by extracting
+    the head commit timestamps in all workflow runs. We ignore commits from the oldest
+    and newest dates, since we may not have collected all runs / commits from these days.
+    We calculate the average daily commit rate for each project, then the average daily
+    commit rate across all projects (to use as a threshold for a project being a
+    'frequent committer'). Finally, we output the proportion of frequent vs. infrequent
+    commiting projects, both in numeric and boxplot form.
+
     """
     print('[!] Analyzing project commit frequency')
 
@@ -231,18 +238,20 @@ def analyze_commit_frequency(projects_path: str, workflows_path: str,
         min_valid_date = (min_date + timedelta(days=1)).replace(
             hour=0, minute=0, second=0, microsecond=0)
 
-        # As long as 1 full days worth of commits were observed, compute daily averages
-        num_proj_commits_by_valid_date = defaultdict(int)
-        if (max_valid_date - min_valid_date + timedelta(seconds=1)).days >= 1:
+        # As long as 1 full day's worth of commits were observed, compute daily averages
+        num_full_days = (max_valid_date - min_valid_date +
+                         timedelta(seconds=1)).days
+        if num_full_days >= 1:
+            num_proj_commits_by_valid_date = defaultdict(int)
             valid_repo_id_strs.append(repo_id_str)
             for commit_datetime in commit_datetimes:
                 if commit_datetime >= min_valid_date and commit_datetime <= max_valid_date:
                     commit_date = str(commit_datetime.date())
                     num_proj_commits_by_valid_date[commit_date] += 1
 
-        # Calculate project average daily commit rate (some days may be ignored)
-        avg_daily_commits_by_proj[repo_id_str] = sum(
-            num_proj_commits_by_valid_date.values()) / len(num_proj_commits_by_valid_date)
+            # Calculate project average daily commit rate (some days may be ignored)
+            avg_daily_commits_by_proj[repo_id_str] = sum(
+                num_proj_commits_by_valid_date.values()) / num_full_days
 
     num_valid_proj = len(valid_repo_id_strs)
     print('Only commits from fully observed dates will be considered')
