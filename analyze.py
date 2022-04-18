@@ -1,3 +1,4 @@
+import statistics
 import numpy as np
 from collections import defaultdict
 from datetime import datetime, timedelta
@@ -293,21 +294,32 @@ def analyze_coverage(coverage_path: str, coverage_boxplot_img_path: str) -> None
     where each boxplot illustrates the distribution of code coverage for projects using this
     language.
     """
+
+    def print_stats(coverages, language):
+        coverages_mean = statistics.mean(coverages)
+        coverages_median = statistics.median(coverages)
+        coverages_std = statistics.stdev(coverages)
+
+        print(f"Project test coverage stats for {language} projects:")
+        print(f"\tCount: {len(coverages)}")
+        print(f"\tAverage: {coverages_mean:.2f}%")
+        print(f"\tMedian: {coverages_median:.2f}%")
+        print(f"\tMin: {max(coverages)}")
+        print(f"\tMax: {min(coverages)}")
+        print(f"\tStd Dev: {coverages_std:.2f}%")
+
     print('[!] Analyzing project code coverage by language')
     coverage_by_lang_group = load_coverage(coverage_path)
     plot_code_coverage_boxplots(
         coverage_by_lang_group, coverage_boxplot_img_path)
 
     # Calculate average coverage over all projects
-    all_proj_avg_cov = flatten_list(coverage_by_lang_group.values())
-    all_proj_avg_cov = sum(all_proj_avg_cov) / len(all_proj_avg_cov)
-    print(f"Average overall project coverage is {all_proj_avg_cov:.2f}%")
+    all_coverages = flatten_list(coverage_by_lang_group.values())
+    print_stats(all_coverages, 'All')
 
     # Calculate average coverage for projects in each language group
     for language_group, coverage_amounts in coverage_by_lang_group.items():
-        langage_group_avg_cov = sum(coverage_amounts) / len(coverage_amounts)
-        print(
-            f"Average {language_group} project coverage is {langage_group_avg_cov:.2f}%")
+        print_stats(coverage_amounts, language_group)
 
     print('[!] Done analyzing project code coverage')
 
