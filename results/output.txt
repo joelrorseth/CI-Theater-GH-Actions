@@ -1,0 +1,396 @@
+CI Theater (GitHub Actions edition)
+NOTE: Please delete any stale data in ./data/ before running
+Starting the experiment...
+
+[!] Beginning filtering phase:
+
+
+[!] Building initial set of projects by cross-referencing project members
+Loading project-member associations...
+Loaded 15525052 unique member associations to 9549783 projects
+Removed 7259240/9549783 projects that have < 2 members
+Loading GHTorrent projects (partition 1/10)...
+main.py:23: DtypeWarning: Columns (0,2) have mixed types.Specify dtype option on import or set low_memory=False.
+  get_initial_projects(PROJECTS_STAGE_0_PATH)
+Loading GHTorrent projects (partition 2/10)...
+main.py:23: DtypeWarning: Columns (0,2,8) have mixed types.Specify dtype option on import or set low_memory=False.
+  get_initial_projects(PROJECTS_STAGE_0_PATH)
+Loading GHTorrent projects (partition 3/10)...
+Loading GHTorrent projects (partition 4/10)...
+Loading GHTorrent projects (partition 5/10)...
+Loading GHTorrent projects (partition 6/10)...
+Loading GHTorrent projects (partition 7/10)...
+Loading GHTorrent projects (partition 8/10)...
+Loading GHTorrent projects (partition 9/10)...
+Loading GHTorrent projects (partition 10/10)...
+[!] 189468700 GHTorrent projects were reduced to 1990595
+[!] Wrote filtered projects file to data/projects_stage_0.csv
+[!] Done building initial set of projects
+
+
+[!] Filtering out projects that are forked from another project
+Loading projects...
+/home/CI-Theater-GH-Actions/projects.py:84: DtypeWarning: Columns (0,2) have mixed types.Specify dtype option on import or set low_memory=False.
+  projects_df = read_df_from_csv_file(input_projects_path, PROJECT_COLS)
+Loaded 1990597 projects
+1990597 projects were reduced to 1834503
+[!] Wrote filtered projects file to data/projects_stage_1.csv
+[!] Done filtering out forked projects
+
+
+[!] Filtering out projects that use an unsupported language
+Loading projects...
+/home/CI-Theater-GH-Actions/projects.py:84: DtypeWarning: Columns (8) have mixed types.Specify dtype option on import or set low_memory=False.
+  projects_df = read_df_from_csv_file(input_projects_path, PROJECT_COLS)
+Loaded 1834503 projects
+1834503 projects were reduced to 484887
+[!] Wrote filtered projects file to data/projects_stage_2.csv
+[!] Done filtering out projects that use an unsupported language
+
+
+[!] Filtering out projects that don't have any GitHub Actions workflow files
+...
+Querying GitHub Actions usage for projects (partition 1498/1500)...
+Querying GitHub Actions usage for projects (partition 1499/1500)...
+Querying GitHub Actions usage for projects (partition 1500/1500)...
+There are 12028 projects containing GitHub Actions workflow(s)
+484887 projects were reduced to 12028
+[!] Wrote filtered projects file to data/projects_stage_3.csv
+[!] Wrote workflow filenames file to data/workflows_stage_3.json
+[!] Done filtering out projects that don't have any GitHub Actions workflow files
+
+
+[!] Filtering out projects lacking any workflow file that use GitHub Actions for CI
+Loading projects from data/projects_stage_3.csv...
+Loaded 12028 projects
+Getting workflow YAML for projects (partition 1/100)...
+Getting workflow YAML for projects (partition 2/100)...
+Getting workflow YAML for projects (partition 3/100)...
+...
+Getting workflow YAML for projects (partition 98/100)...
+Getting workflow YAML for projects (partition 99/100)...
+Getting workflow YAML for projects (partition 100/100)...
+Wrote workflows for 12027 projects to data/workflow_yaml_stage_3.json
+Retrieved all workflow YAML contents, checking for CI usage...
+Checking repo workflows for CI usage (0/12027)...
+Checking repo workflows for CI usage (100/12027)...
+Checking repo workflows for CI usage (200/12027)...
+Checking repo workflows for CI usage (300/12027)...
+Checking repo workflows for CI usage (400/12027)...
+...
+Checking repo workflows for CI usage (11900/12028)...
+ERROR: YAML parsing raised ParserError.
+Checking repo workflows for CI usage (12000/12028)...
+Only 8740/12028 projects actually use CI
+There are 8740 projects using GitHub Actions for CI
+Wrote workflows for 8740 projects to data/workflows_stage_4.json
+Wrote 8740 projects to data/projects_stage_4.csv
+12028 projects were reduced to 8740
+[!] Done filtering out projects that don't use GitHub Actions for CI
+
+
+[!] Beginning augmentation phase
+
+
+[!] Retrieving the default branch name for each project
+Loading projects from data/projects_stage_4.csv...
+Loaded 8740 projects
+Getting default branch names for projects in partition 1/60...
+Getting default branch names for projects in partition 2/60...
+...
+Getting default branch names for projects in partition 59/60...
+Getting default branch names for projects in partition 60/60...
+Wrote default branch names for 8739 projects to data/default_branches.json
+[!] Wrote default branch names file to data/default_branches.json
+[!] Done retrieving default branch names
+
+
+[!] Filtering out projects for which we could not determine the default branch name
+Loading default branches from data/default_branches.json...
+Loaded default branches for 8739 projects
+8739 projects were reduced to 8739
+Wrote 8739 projects to data/projects_stage_5.csv
+[!] Done filtering out projects with missing default branch name
+
+
+[!] Retrieving the 500 most recent runs for each project workflow
+Loading projects from data/projects_stage_5.csv...
+Loaded 8739 projects
+Loading workflows from data/workflows_stage_4.json...
+Loaded workflows for 8739 projects
+Loading default branches from data/default_branches.json...
+Loaded default branches for 8739 projects
+Verifying that all projects have required augmented data...
+Getting workflow runs for project 1/8739
+Getting workflow runs for project 2/8739
+...
+Getting workflow runs for project 8738/8739
+Getting workflow runs for project 8739/8739
+[!] Done retrieving workflow runs (no summarized file was written)
+
+
+[!] Done retrieving workflow runs (no summarized file was written)
+[!] Filtering out projects with < 100 workflow runs
+Loading projects from data/projects_stage_5.csv...
+Loaded 8739 projects
+Loading workflows from data/workflows_stage_4.json...
+Loaded workflows for 8739 projects
+Filtering projects by # of workflow runs (0/8739)...
+Filtering projects by # of workflow runs (100/8739)...
+...
+Filtering projects by # of workflow runs (8600/8739)...
+Filtering projects by # of workflow runs (8700/8739)...
+8739 projects were reduced to 1156
+Wrote 1156 projects to data/projects_stage_6.csv
+Wrote workflows for 1156 projects to data/workflows_stage_6.json
+[!] Done filtering out projects with too few workflow runs
+
+
+[!] Retrieving Coveralls code coverage info for each project
+Loading projects from data/projects_stage_6.csv...
+Loaded 1156 projects
+Loading workflows from data/workflows_stage_6.json...
+Loaded workflows for 1156 projects
+Loading default branches from data/default_branches.json...
+Loaded default branches for 8739 projects
+Verifying that all projects have required augmented data...
+Getting Coveralls report for project 1/1156 (# found = 0)
+Getting Coveralls report for project 2/1156 (# found = 1)
+Getting Coveralls report for project 3/1156 (# found = 1)
+...
+Getting Coveralls report for project 1155/1156 (# found = 23)
+Getting Coveralls report for project 1156/1156 (# found = 23)
+Found Coveralls reports for 23/1156 projects
+Wrote coverage stats for 5 language groups to data/language_coverage.json
+Found 4 coverage reports for Java projects
+Found 10 coverage reports for JS / TS projects
+Found 6 coverage reports for Python projects
+Found 2 coverage reports for Ruby projects
+Found 1 coverage reports for C / C++ projects
+[!] Done retrieving Coveralls code coverage info
+
+
+[!] Beginning analysis phase
+
+
+[!] Analyzing project code coverage by language
+Loading coverage stats from data/language_coverage.json...
+Loaded coverage stats for 5 language groups
+Wrote boxplot to results/project_coverage_by_language.png
+Project test coverage stats for All projects:
+	Count: 23
+	Average: 68.37%
+	Median: 77.93%
+	Min: 0.00%
+	Max: 97.88%
+	Std Dev: 29.41%
+Project test coverage stats for Java projects:
+	Count: 4
+	Average: 43.91%
+	Median: 37.98%
+	Min: 4.90%
+	Max: 94.80%
+	Std Dev: 41.42%
+Project test coverage stats for JS / TS projects:
+	Count: 10
+	Average: 84.47%
+	Median: 86.94%
+	Min: 60.95%
+	Max: 97.88%
+	Std Dev: 12.84%
+Project test coverage stats for Python projects:
+	Count: 6
+	Average: 49.79%
+	Median: 52.93%
+	Min: 0.00%
+	Max: 87.20%
+	Std Dev: 29.81%
+Project test coverage stats for Ruby projects:
+	Count: 2
+	Average: 84.37%
+	Median: 84.37%
+	Min: 76.56%
+	Max: 92.17%
+	Std Dev: 11.03%
+Project test coverage stats for C / C++ projects:
+	Only 1 reported test coverage with value 84.80%
+[!] Done analyzing project code coverage
+
+
+[!] Analyzing project commit frequency
+Loading projects from data/projects_stage_6.csv...
+Loaded 1156 projects
+Loading workflows from data/workflows_stage_6.json...
+Loaded workflows for 1156 projects
+WARNING: Empty commit in data/workflow_runs_repo39034748workflow0.json, skipping...
+WARNING: Empty commit in data/workflow_runs_repo39034748workflow0.json, skipping...
+WARNING: Empty commit in data/workflow_runs_repo147657296workflow4.json, skipping...
+WARNING: Empty commit in data/workflow_runs_repo147657296workflow4.json, skipping...
+Only commits from fully observed dates will be considered
+1156/1156 projects have >= 1 full day of commit history
+The frequent commit threshold (average daily commit rate) is 1.18
+254/1156 (21.97%) projects commit frequently
+902/1156 (78.03%) projects commit infrequently
+Wrote boxplot to results/daily_commits_java.png
+Wrote boxplot to results/daily_commits_js_ts.png
+Wrote boxplot to results/daily_commits_ruby.png
+Wrote boxplot to results/daily_commits_c_cpp.png
+Wrote boxplot to results/daily_commits_python.png
+[!] Done analyzing project commit frequency
+
+
+[!] Analyzing broken build duration
+Loading projects from data/projects_stage_6.csv...
+Loaded 1156 projects
+Loading workflows from data/workflows_stage_6.json...
+Loaded workflows for 1156 projects
+WARNING: Incomplete commit, skipping...
+WARNING: Incomplete commit, skipping...
+WARNING: Incomplete commit, skipping...
+WARNING: Incomplete commit, skipping...
+Broken build duration stats for All projects (8345 timedeltas):
+	Average: 3 days, 10:27:37.247693
+	Median: 1:22:32
+	Max: 491 days, 11:23:39
+	Std Dev: 16 days, 0:40:09.935710
+	0.75 Quantile: 22:41:54
+	0.90 Quantile: 5 days, 17:48:10.200000
+	0.95 Quantile: 14 days, 22:36:04.400000
+	0.99 Quantile: 69 days, 18:05:04.680000
+
+Broken build duration stats for Java projects (760 timedeltas):
+	Average: 4 days, 12:31:04.514474
+	Median: 1:33:10.500000
+	Max: 268 days, 1:30:35
+	Std Dev: 19 days, 9:09:16.314328
+	0.75 Quantile: 1 day, 4:08:53.750000
+	0.90 Quantile: 8 days, 0:11:25.900000
+	0.95 Quantile: 20 days, 2:56:58
+	0.99 Quantile: 78 days, 17:46:39.300000
+
+Broken build duration stats for JS / TS projects (2406 timedeltas):
+	Average: 3 days, 17:59:56.864921
+	Median: 1:13:17.500000
+	Max: 491 days, 11:23:39
+	Std Dev: 18 days, 9:30:16.716126
+	0.75 Quantile: 22:03:15.500000
+	0.90 Quantile: 5 days, 22:38:54
+	0.95 Quantile: 18 days, 1:03:07.500000
+	0.99 Quantile: 73 days, 3:50:13
+
+Broken build duration stats for Ruby projects (257 timedeltas):
+	Average: 4 days, 2:32:00.155642
+	Median: 1:24:51
+	Max: 302 days, 8:23:43
+	Std Dev: 22 days, 6:59:16.888310
+	0.75 Quantile: 1 day, 5:22:08
+	0.90 Quantile: 5 days, 0:30:39.800000
+	0.95 Quantile: 11 days, 6:35:00.200000
+	0.99 Quantile: 79 days, 20:40:57.160000
+
+Broken build duration stats for C / C++ projects (1918 timedeltas):
+	Average: 3 days, 5:23:42.133994
+	Median: 1:18:46
+	Max: 191 days, 0:51:48
+	Std Dev: 13 days, 5:24:12.559133
+	0.75 Quantile: 1 day, 0:00:00.250000
+	0.90 Quantile: 5 days, 22:17:55.800000
+	0.95 Quantile: 15 days, 23:39:42.950000
+	0.99 Quantile: 69 days, 16:44:45.550000
+
+Broken build duration stats for Python projects (3004 timedeltas):
+	Average: 2 days, 23:41:19.863848
+	Median: 1:30:43
+	Max: 260 days, 5:28:52
+	Std Dev: 13 days, 21:11:02.853853
+	0.75 Quantile: 20:03:56.500000
+	0.90 Quantile: 4 days, 12:07:34.600000
+	0.95 Quantile: 12 days, 18:56:16.800000
+	0.99 Quantile: 57 days, 21:10:49.600000
+
+The broken build duration threshold (3rd quartile) is 22:41:54
+601/1156 (51.99%) projects have >= 1 builds exceeding 22:41:54
+Wrote boxplot to results/broken_builds_java.png
+Wrote boxplot to results/broken_builds_js_ts.png
+Wrote boxplot to results/broken_builds_ruby.png
+Wrote boxplot to results/broken_builds_c_cpp.png
+Wrote boxplot to results/broken_builds_python.png
+[!] Done analyzing broken build duration
+
+
+[!] Analyzing build duration
+Loading projects from data/projects_stage_6.csv...
+Loaded 1156 projects
+Loading workflows from data/workflows_stage_6.json...
+Loaded workflows for 1156 projects
+Identifying builds that do not execute in under 10 minutes
+Build duration stats for All projects (500163 timedeltas):
+	Average: 0:53:23.195392
+	Median: 0:06:20
+	Max: 163 days, 9:50:10
+	Std Dev: 18:37:49.302024
+	0.75 Quantile: 0:18:52
+	0.90 Quantile: 0:42:42
+	0.95 Quantile: 1:04:20
+	0.99 Quantile: 4:20:15
+
+Build duration stats for Java projects (49546 timedeltas):
+	Average: 0:27:36.163706
+	Median: 0:04:50
+	Max: 31 days, 0:06:07
+	Std Dev: 9:08:12.053063
+	0.75 Quantile: 0:10:07
+	0.90 Quantile: 0:21:55
+	0.95 Quantile: 0:36:16.500000
+	0.99 Quantile: 2:09:54.900000
+
+Build duration stats for JS / TS projects (140091 timedeltas):
+	Average: 1:16:00.648714
+	Median: 0:04:02
+	Max: 55 days, 5:22:35
+	Std Dev: 1 day, 0:57:39.173443
+	0.75 Quantile: 0:10:26
+	0.90 Quantile: 0:24:13
+	0.95 Quantile: 0:39:56
+	0.99 Quantile: 6:00:25
+
+Build duration stats for Ruby projects (30051 timedeltas):
+	Average: 0:39:32.589997
+	Median: 0:16:11
+	Max: 163 days, 9:50:10
+	Std Dev: 23:25:49.859796
+	0.75 Quantile: 0:27:42.500000
+	0.90 Quantile: 0:40:04
+	0.95 Quantile: 0:51:24
+	0.99 Quantile: 1:25:00
+
+Build duration stats for C / C++ projects (105006 timedeltas):
+	Average: 0:39:49.576862
+	Median: 0:11:17
+	Max: 55 days, 5:30:39
+	Std Dev: 7:53:01.552747
+	0.75 Quantile: 0:28:09
+	0.90 Quantile: 1:03:39.500000
+	0.95 Quantile: 1:50:21.750000
+	0.99 Quantile: 5:40:06.450000
+
+Build duration stats for Python projects (175469 timedeltas):
+	Average: 0:53:05.400732
+	Median: 0:06:34
+	Max: 50 days, 9:33:48
+	Std Dev: 18:21:21.267778
+	0.75 Quantile: 0:22:29
+	0.90 Quantile: 0:48:34
+	0.95 Quantile: 1:05:51.600000
+	0.99 Quantile: 3:34:24.320000
+
+939/1156 (81.23%) projects have >= 1 builds exceeding 0:10:00
+Wrote boxplot to results/build_duration_java.png
+Wrote boxplot to results/build_duration_js_ts.png
+Wrote boxplot to results/build_duration_ruby.png
+Wrote boxplot to results/build_duration_c_cpp.png
+Wrote boxplot to results/build_duration_python.png
+[!] Done analyzing build duration
+
+
+Done
